@@ -16,6 +16,8 @@ import {
   AlertCircle,
   Shield,
 } from "lucide-react";
+import { useResQStore, type ActiveResQRequest } from "./resqStore";
+import { HO_CHI_MINH_CITY_FALLBACK } from "./tracking/tracking-utils";
 
 const mono = "font-['IBM_Plex_Mono',monospace]";
 const pagePadding = "px-5 sm:px-8 lg:px-[84px] xl:px-[120px]";
@@ -35,11 +37,33 @@ const TRAVEL_FEE = 25000;
 const DISCOUNT = 10000;
 const TOTAL = SERVICE_FEE + TRAVEL_FEE - DISCOUNT;
 
+const fallbackRequest: ActiveResQRequest = {
+  id: "RSQ-330993",
+  serviceId: "va-lop",
+  serviceTitle: "Vá lốp khẩn cấp",
+  servicePrice: "Từ 50.000đ",
+  serviceEta: "15-20 phút",
+  vehicleId: "wave-rsx",
+  vehicleName: "Honda Wave RSX",
+  vehiclePlate: "59F1-12345",
+  vehicleType: "Xe máy",
+  locationAddress: "TP. Hồ Chí Minh",
+  locationPoint: HO_CHI_MINH_CITY_FALLBACK,
+  locationSource: "fallback",
+  notes: "",
+  createdAt: new Date().toISOString(),
+  fixerTeam: "Đội lưu động ResQ 07",
+  fixerVehicle: "Box van cứu hộ",
+  status: "Đang tiếp cận",
+};
+
 function formatVND(value: number) {
   return value.toLocaleString("vi-VN") + "đ";
 }
 
 export default function PaymentPage() {
+  const { activeRequest } = useResQStore();
+  const request = activeRequest ?? fallbackRequest;
   const [selected, setSelected] = useState("momo");
   const [coupon, setCoupon] = useState("RESQ10K");
   const [applied, setApplied] = useState(true);
@@ -233,9 +257,9 @@ export default function PaymentPage() {
 
               <div className="mb-[16px] space-y-[12px]">
                 {[
-                  ["Dịch vụ", "Vá lốp xe máy"],
-                  ["Xe", "Honda Wave RSX · 59F1-12345"],
-                  ["Fixer", "Trần Văn Minh"],
+                  ["Dịch vụ", request.serviceTitle],
+                  ["Xe", `${request.vehicleName} · ${request.vehiclePlate}`],
+                  ["Fixer", request.fixerTeam],
                   ["Phương thức", paymentMethods.find((method) => method.id === selected)?.name || ""],
                 ].map(([key, value]) => (
                   <div key={key} className="flex justify-between gap-3">
@@ -405,10 +429,10 @@ export default function PaymentPage() {
                 </div>
                 <div>
                   <p className={`${mono} text-[14px] font-[500] text-[#080b0d]`}>
-                    Vá lốp xe máy
+                    {request.serviceTitle}
                   </p>
                   <p className={`${mono} text-[12px] text-[#a4a4a4]`}>
-                    Honda Wave RSX · 59F1-12345
+                    {request.vehicleName} · {request.vehiclePlate}
                   </p>
                 </div>
               </div>
@@ -416,7 +440,7 @@ export default function PaymentPage() {
               <div className="mb-[16px] space-y-[10px]">
                 {[
                   ["Phương thức", paymentMethods.find((method) => method.id === selected)?.name || ""],
-                  ["Vá lốp xe máy", formatVND(SERVICE_FEE)],
+                  [request.serviceTitle, formatVND(SERVICE_FEE)],
                   ["Phí di chuyển (3.2 km)", formatVND(TRAVEL_FEE)],
                 ].map(([key, value]) => (
                   <div key={key} className="flex justify-between gap-3">
@@ -717,10 +741,10 @@ export default function PaymentPage() {
                   </div>
                   <div>
                     <p className={`${mono} text-[14px] font-[500] text-[#080b0d]`}>
-                      Vá lốp xe máy
+                      {request.serviceTitle}
                     </p>
                     <p className={`${mono} text-[12px] text-[#a4a4a4]`}>
-                      Honda Wave RSX · 59F1-12345
+                      {request.vehicleName} · {request.vehiclePlate}
                     </p>
                   </div>
                 </div>
@@ -733,7 +757,7 @@ export default function PaymentPage() {
                   </div>
                   <div>
                     <p className={`${mono} text-[14px] font-[500] text-[#080b0d]`}>
-                      Trần Văn Minh
+                      {request.fixerTeam}
                     </p>
                     <div className="flex items-center gap-[4px]">
                       <span className={`${mono} text-[12px] text-[#a4a4a4]`}>
@@ -749,7 +773,7 @@ export default function PaymentPage() {
 
                 <div className="mb-[16px] space-y-[8px]">
                   {[
-                    ["Vá lốp xe máy", formatVND(SERVICE_FEE)],
+                    [request.serviceTitle, formatVND(SERVICE_FEE)],
                     ["Phí di chuyển (3.2 km)", formatVND(TRAVEL_FEE)],
                   ].map(([key, value]) => (
                     <div key={key} className="flex justify-between gap-3">

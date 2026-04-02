@@ -6,6 +6,7 @@ import {
   ChevronLeft,
   ClipboardList,
   Clock3,
+  CreditCard,
   MapPin,
   PhoneCall,
   ShieldCheck,
@@ -61,6 +62,7 @@ export default function TrackingPage() {
     { label: "Trạng thái", value: request.status },
   ];
   const VehicleIcon = request.vehicleType === "Xe máy" ? Bike : Car;
+  const serviceProgress = getServiceProgress(request.status);
 
   return (
     <div className="overflow-x-hidden bg-white">
@@ -162,6 +164,100 @@ export default function TrackingPage() {
               <div className="resq-reveal resq-reveal--delay-2">
                 <TrackingLiveMap destinationPoint={request.locationPoint} />
               </div>
+
+              <div className="resq-reveal resq-reveal--delay-2 mt-5 rounded-[20px] border border-[rgba(4,38,153,0.08)] bg-white p-5 shadow-[0_18px_50px_rgba(8,11,13,0.04)] sm:p-6">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
+                    <p className={`${mono} text-[12px] uppercase tracking-[0.16em] text-[#99a1af]`}>
+                      Tiến độ dịch vụ
+                    </p>
+                    <h2 className={`${mono} mt-2 text-[20px] font-[700] text-[#080b0d]`}>
+                      Theo dõi từng bước hỗ trợ
+                    </h2>
+                    <p className={`${mono} mt-2 max-w-[640px] text-[13px] leading-[22px] text-[#4a5565]`}>
+                      Bạn có thể thanh toán trước để tiết kiệm thời gian khi fixer hoàn tất hỗ trợ tại chỗ.
+                    </p>
+                  </div>
+
+                  <div className="inline-flex w-fit items-center rounded-full bg-[rgba(238,50,36,0.08)] px-3 py-2">
+                    <span className={`${mono} text-[11px] uppercase tracking-[0.16em] text-[#ee3224]`}>
+                      {serviceProgress.progressLabel}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mt-5">
+                  <div className="h-[10px] overflow-hidden rounded-full bg-[#f1f2f4]">
+                    <div
+                      className="h-full rounded-full bg-[linear-gradient(90deg,#ee3224_0%,#ff7d6f_100%)] transition-all duration-500"
+                      style={{ width: `${serviceProgress.percent}%` }}
+                    />
+                  </div>
+
+                  <div className="mt-4 grid gap-3 sm:grid-cols-4">
+                    {serviceProgress.steps.map((step, index) => {
+                      const isComplete = index < serviceProgress.currentIndex;
+                      const isCurrent = index === serviceProgress.currentIndex;
+
+                      return (
+                        <div
+                          key={step.label}
+                          className={`rounded-[16px] border px-4 py-4 ${
+                            isCurrent
+                              ? "border-[#ee3224] bg-[rgba(238,50,36,0.06)]"
+                              : isComplete
+                                ? "border-[rgba(238,50,36,0.12)] bg-white"
+                                : "border-[rgba(4,38,153,0.08)] bg-[#f7f7f8]"
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div
+                              className={`flex size-[28px] shrink-0 items-center justify-center rounded-full ${
+                                isCurrent || isComplete ? "bg-[#ee3224]" : "bg-white"
+                              }`}
+                            >
+                              <span
+                                className={`${mono} text-[11px] font-[700] ${
+                                  isCurrent || isComplete ? "text-white" : "text-[#99a1af]"
+                                }`}
+                              >
+                                {index + 1}
+                              </span>
+                            </div>
+                            <p className={`${mono} text-[12px] font-[500] text-[#080b0d]`}>
+                              {step.label}
+                            </p>
+                          </div>
+                          <p className={`${mono} mt-3 text-[12px] leading-[20px] text-[#4a5565]`}>
+                            {step.detail}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="rounded-[16px] bg-[#f7f7f8] px-4 py-3">
+                    <p className={`${mono} text-[11px] uppercase tracking-[0.16em] text-[#99a1af]`}>
+                      Sẵn sàng thanh toán
+                    </p>
+                    <p className={`${mono} mt-2 text-[14px] font-[500] text-[#080b0d]`}>
+                      Hoàn tất trước, fixer vẫn tiếp tục hỗ trợ bình thường.
+                    </p>
+                  </div>
+
+                  <Link
+                    to="/thanh-toan"
+                    className="inline-flex h-[48px] items-center justify-center gap-2 rounded-[12px] bg-[#ee3224] px-6 no-underline transition-colors hover:bg-[#d42b1e]"
+                  >
+                    <CreditCard size={18} className="text-white" />
+                    <span className={`${mono} text-[14px] font-[500] text-white`}>
+                      Thanh Toán
+                    </span>
+                  </Link>
+                </div>
+              </div>
             </div>
 
             <aside className="space-y-5 lg:sticky lg:top-[108px]">
@@ -261,4 +357,39 @@ function InfoRow({
       </div>
     </div>
   );
+}
+
+function getServiceProgress(status: string) {
+  const steps = [
+    {
+      label: "Yêu cầu đã gửi",
+      detail: "Hệ thống đã ghi nhận dịch vụ và chuẩn bị điều phối.",
+    },
+    {
+      label: "Fixer xác nhận",
+      detail: "Đội ResQ đã nhận đơn và sẵn sàng di chuyển.",
+    },
+    {
+      label: "Đang di chuyển",
+      detail: "Fixer đang đến vị trí của bạn theo tuyến đường cập nhật.",
+    },
+    {
+      label: "Đang hỗ trợ",
+      detail: "Kỹ thuật viên xử lý xe và hoàn thiện dịch vụ tại chỗ.",
+    },
+  ];
+
+  const normalizedStatus = status.toLowerCase();
+  const currentIndex = normalizedStatus.includes("hỗ trợ")
+    ? 3
+    : normalizedStatus.includes("xác nhận")
+      ? 1
+      : 2;
+
+  return {
+    steps,
+    currentIndex,
+    percent: ((currentIndex + 1) / steps.length) * 100,
+    progressLabel: `${currentIndex + 1}/${steps.length} giai đoạn`,
+  };
 }
