@@ -1,11 +1,24 @@
+# ResQ Website
 
-  # Polish Design and Add Maps
+ResQ Website is a Vite + React frontend for the ResQ roadside assistance experience.
 
-  This is a code bundle for Polish Design and Add Maps. The original project is available at https://www.figma.com/design/F36qwkmMcBzAZKQXp1voFA/Polish-Design-and-Add-Maps.
+## Local development
 
-  ## Running the code
+```bash
+npm install
+npm run dev
+```
 
-  Run `npm i` to install the dependencies.
+## Production build
 
-  Run `npm run dev` to start the development server.
-  
+```bash
+npm run build
+```
+
+## GitHub Pages deployment
+
+This repository is configured to deploy automatically to GitHub Pages from the `main` branch through GitHub Actions.
+
+Expected site URL:
+
+`https://nghuax.github.io/resqwebsite/`
