@@ -386,7 +386,7 @@ export function TrackingLiveMap() {
         </span>
       </div>
 
-      <div className="pointer-events-none absolute bottom-3 right-3 flex flex-col gap-3 sm:bottom-6 sm:right-6">
+      <div className="pointer-events-none absolute right-3 top-14 flex flex-col gap-3 sm:right-6 sm:top-6">
         <MapActionButton
           active={false}
           icon={<LocateFixed size={16} />}

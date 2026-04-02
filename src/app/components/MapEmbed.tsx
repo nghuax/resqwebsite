@@ -63,6 +63,42 @@ export function MapEmbed({
         interactive: false,
       }).addTo(map);
 
+      const supportPoints: [number, number][] = [
+        [lat + 0.011, lng - 0.018],
+        [lat - 0.008, lng + 0.014],
+        [lat + 0.004, lng + 0.02],
+      ];
+
+      L.polyline(
+        [
+          supportPoints[0],
+          [lat, lng],
+          supportPoints[1],
+          [lat, lng],
+          supportPoints[2],
+        ],
+        {
+          color: "#080b0d",
+          weight: 2,
+          opacity: 0.28,
+          dashArray: "6 8",
+          lineCap: "round",
+          lineJoin: "round",
+          interactive: false,
+        },
+      ).addTo(map);
+
+      supportPoints.forEach((point) => {
+        L.circleMarker(point, {
+          radius: 6,
+          color: "#ffffff",
+          weight: 3,
+          fillColor: "#080b0d",
+          fillOpacity: 1,
+          interactive: false,
+        }).addTo(map);
+      });
+
       const marker = L.circleMarker([lat, lng], {
         radius: 10,
         color: "#ffffff",
@@ -75,6 +111,16 @@ export function MapEmbed({
       markerRef.current = marker;
       coverageRef.current = coverage;
       setIsReady(true);
+      map.fitBounds(
+        [
+          [lat, lng],
+          ...supportPoints,
+        ],
+        {
+          padding: [38, 38],
+          maxZoom: zoom,
+        },
+      );
 
       if (typeof ResizeObserver !== "undefined") {
         resizeObserver = new ResizeObserver(() => {
@@ -117,9 +163,9 @@ export function MapEmbed({
 
   return (
     <div
-      className={`relative overflow-hidden rounded-[20px] border border-[rgba(4,38,153,0.08)] bg-[#f3f4f6] shadow-[0_20px_70px_rgba(8,11,13,0.08)] ${className}`}
+      className={`resq-card-lift resq-map-float relative overflow-hidden rounded-[20px] border border-[rgba(4,38,153,0.08)] bg-[#f3f4f6] shadow-[0_20px_70px_rgba(8,11,13,0.08)] ${className}`}
     >
-      <div ref={mapElementRef} className="h-full w-full" />
+      <div ref={mapElementRef} className="absolute inset-0" />
 
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.5),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.12),transparent_28%,transparent_72%,rgba(8,11,13,0.08)_100%)]" />
 
@@ -133,6 +179,15 @@ export function MapEmbed({
         <p className="mt-1 font-['IBM_Plex_Mono',monospace] text-[12px] leading-[1.7] text-[#4a5565]">
           {description}
         </p>
+      </div>
+
+      <div className="pointer-events-none absolute bottom-4 left-4 right-4 flex flex-wrap gap-2 sm:bottom-5 sm:left-5 sm:right-auto">
+        <span className="font-['IBM_Plex_Mono',monospace] rounded-full border border-white/75 bg-white/90 px-3 py-1.5 text-[11px] uppercase tracking-[0.16em] text-[#080b0d] shadow-[0_10px_24px_rgba(8,11,13,0.08)] backdrop-blur-[14px]">
+          Phủ sóng 24/7
+        </span>
+        <span className="font-['IBM_Plex_Mono',monospace] rounded-full border border-white/75 bg-white/90 px-3 py-1.5 text-[11px] uppercase tracking-[0.16em] text-[#4a5565] shadow-[0_10px_24px_rgba(8,11,13,0.08)] backdrop-blur-[14px]">
+          Điều phối gần nhất
+        </span>
       </div>
 
       {!isReady && (

@@ -21,6 +21,10 @@ import {
   Check,
   Loader2,
 } from "lucide-react";
+import {
+  ServiceLocationPicker,
+  type ServiceLocationValue,
+} from "./location/ServiceLocationPicker";
 
 const mono = "font-['IBM_Plex_Mono',monospace]";
 const pagePadding = "px-5 sm:px-8 lg:px-[84px] xl:px-[120px]";
@@ -187,6 +191,8 @@ function ServiceModal({ service, onClose }: { service: Service; onClose: () => v
   const [selectedVehicle, setSelectedVehicle] = useState(1);
   const [step, setStep] = useState<ModalStep>("select");
   const [notes, setNotes] = useState("");
+  const [selectedLocation, setSelectedLocation] = useState<ServiceLocationValue | null>(null);
+  const [locationLabel, setLocationLabel] = useState("");
   const navigate = useNavigate();
   const requestId = "RSQ-330993";
 
@@ -211,11 +217,23 @@ function ServiceModal({ service, onClose }: { service: Service; onClose: () => v
     }
   }, [step]);
 
+  const locationSummary =
+    locationLabel.trim() || selectedLocation?.address || "Đang xác định vị trí";
+  const locationSourceLabel =
+    selectedLocation?.source === "browser"
+      ? "GPS trình duyệt"
+      : selectedLocation?.source === "manual"
+        ? "Vị trí đã chỉnh"
+        : "Vị trí mặc định";
+  const locationCoordinates = selectedLocation
+    ? `${selectedLocation.point.lat.toFixed(5)}, ${selectedLocation.point.lng.toFixed(5)}`
+    : null;
+
   if (step === "sending") {
     return (
-      <div className="fixed inset-0 z-50 overflow-y-auto bg-black/40 px-4 py-6 sm:px-6 sm:py-10">
+      <div className="resq-modal-backdrop fixed inset-0 z-50 overflow-y-auto bg-black/40 px-4 py-6 sm:px-6 sm:py-10">
         <div className="mx-auto flex min-h-full w-full max-w-[520px] items-center justify-center">
-          <div className="w-full rounded-[18px] bg-white p-8 text-center sm:p-10">
+          <div className="resq-modal-panel w-full rounded-[18px] bg-white p-8 text-center sm:p-10">
             <div className="mb-[24px] flex justify-center">
               <Loader2 size={56} className="animate-spin text-[#ee3224]" />
             </div>
@@ -234,12 +252,12 @@ function ServiceModal({ service, onClose }: { service: Service; onClose: () => v
   if (step === "done") {
     return (
       <div
-        className="fixed inset-0 z-50 overflow-y-auto bg-black/40 px-4 py-6 sm:px-6 sm:py-10"
+        className="resq-modal-backdrop fixed inset-0 z-50 overflow-y-auto bg-black/40 px-4 py-6 sm:px-6 sm:py-10"
         onClick={onClose}
       >
         <div className="mx-auto flex min-h-full w-full max-w-[520px] items-center justify-center">
           <div
-            className="w-full rounded-[18px] bg-white p-6 sm:p-8"
+            className="resq-modal-panel w-full rounded-[18px] bg-white p-6 sm:p-8"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="mb-[24px] flex flex-col items-center text-center">
@@ -259,6 +277,7 @@ function ServiceModal({ service, onClose }: { service: Service; onClose: () => v
                 ["Dịch vụ", service.title],
                 ["Xe", selectedVehicleData.name],
                 ["Biển số", selectedVehicleData.plate],
+                ["Vị trí", locationSummary],
                 ["Giá ước tính", service.price],
                 ["Mã yêu cầu", requestId],
               ].map(([label, value]) => (
@@ -311,12 +330,12 @@ function ServiceModal({ service, onClose }: { service: Service; onClose: () => v
   if (step === "describe") {
     return (
       <div
-        className="fixed inset-0 z-50 overflow-y-auto bg-black/40 px-4 py-6 sm:px-6 sm:py-10"
+        className="resq-modal-backdrop fixed inset-0 z-50 overflow-y-auto bg-black/40 px-4 py-6 sm:px-6 sm:py-10"
         onClick={onClose}
       >
         <div className="mx-auto flex min-h-full w-full max-w-[520px] items-center justify-center">
           <div
-            className="relative w-full rounded-[18px] bg-white p-6 sm:p-8"
+            className="resq-modal-panel relative w-full rounded-[18px] bg-white p-6 sm:p-8"
             onClick={(event) => event.stopPropagation()}
           >
             <button
@@ -350,6 +369,20 @@ function ServiceModal({ service, onClose }: { service: Service; onClose: () => v
             </div>
 
             <div className="mb-[16px]">
+              <div className="mb-[16px] flex items-start gap-[8px] rounded-[12px] border border-[rgba(4,38,153,0.08)] bg-[#fafafa] p-[12px]">
+                <MapPin size={16} className="mt-[2px] shrink-0 text-[#ee3224]" />
+                <div className="min-w-0">
+                  <p className={`${mono} text-[13px] font-[500] text-[#080b0d]`}>
+                    {locationSummary}
+                  </p>
+                  {locationCoordinates && (
+                    <p className={`${mono} mt-1 text-[11px] leading-[18px] text-[#4a5565]`}>
+                      {locationSourceLabel} · {locationCoordinates}
+                    </p>
+                  )}
+                </div>
+              </div>
+
               <p className={`${mono} mb-[8px] text-[11px] font-[500] uppercase tracking-[0.88px] text-[#a4a4a4]`}>
                 Ghi chú cho Fixer (tùy chọn)
               </p>
@@ -359,13 +392,6 @@ function ServiceModal({ service, onClose }: { service: Service; onClose: () => v
                 placeholder="VD: Lốp trước bị thủng đinh, xe đang ở lề đường bên phải..."
                 className={`h-[110px] w-full resize-none rounded-[10px] border border-[rgba(4,38,153,0.08)] bg-white p-[14px] text-[13px] text-[#080b0d] outline-none transition-colors placeholder:text-[#a4a4a4] focus:border-[#ee3224] ${mono}`}
               />
-            </div>
-
-            <div className="mb-[16px] flex items-start gap-[8px]">
-              <MapPin size={16} className="mt-[2px] shrink-0 text-[#ee3224]" />
-              <span className={`${mono} text-[13px] text-[#080b0d]`}>
-                123 Hai Bà Trưng, Quận 1, TP.HCM
-              </span>
             </div>
 
             <div className="mb-[24px] flex items-start gap-[8px] rounded-[10px] bg-[rgba(238,50,36,0.04)] p-[12px]">
@@ -402,12 +428,12 @@ function ServiceModal({ service, onClose }: { service: Service; onClose: () => v
 
   return (
     <div
-      className="fixed inset-0 z-50 overflow-y-auto bg-black/40 px-4 py-6 sm:px-6 sm:py-10"
+      className="resq-modal-backdrop fixed inset-0 z-50 overflow-y-auto bg-black/40 px-4 py-6 sm:px-6 sm:py-10"
       onClick={onClose}
     >
       <div className="mx-auto flex min-h-full w-full max-w-[640px] items-center justify-center">
         <div
-          className="relative w-full max-h-[90vh] overflow-y-auto rounded-[18px] bg-white p-6 sm:p-8"
+          className="resq-modal-panel relative w-full max-h-[90vh] overflow-y-auto rounded-[18px] bg-white p-6 sm:p-8"
           onClick={(event) => event.stopPropagation()}
         >
           <button
@@ -520,11 +546,42 @@ function ServiceModal({ service, onClose }: { service: Service; onClose: () => v
             <p className={`${mono} mb-[12px] text-[11px] font-[500] uppercase tracking-[0.88px] text-[#a4a4a4]`}>
               Vị trí của bạn
             </p>
-            <div className="flex items-start gap-[12px] rounded-[10px] border border-[rgba(4,38,153,0.08)] p-[12px]">
-              <MapPin size={18} className="shrink-0 text-[#ee3224]" />
-              <span className={`${mono} text-[14px] text-[#080b0d]`}>
-                123 Hai Bà Trưng, Quận 1, TP.HCM
-              </span>
+            <div className="space-y-4">
+              <ServiceLocationPicker
+                className="h-[280px]"
+                onChange={(nextLocation) => {
+                  setSelectedLocation(nextLocation);
+                  setLocationLabel(nextLocation.address);
+                }}
+              />
+
+              <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_180px]">
+                <div>
+                  <p className={`${mono} mb-[8px] text-[11px] font-[500] uppercase tracking-[0.88px] text-[#a4a4a4]`}>
+                    Địa chỉ / điểm mốc
+                  </p>
+                  <input
+                    value={locationLabel}
+                    onChange={(event) => setLocationLabel(event.target.value)}
+                    placeholder="Nhập thêm số nhà, cột mốc hoặc ghi chú vị trí"
+                    className={`h-[46px] w-full rounded-[10px] border border-[rgba(4,38,153,0.08)] bg-white px-[14px] text-[13px] text-[#080b0d] outline-none transition-colors placeholder:text-[#a4a4a4] focus:border-[#ee3224] ${mono}`}
+                  />
+                </div>
+
+                <div className="rounded-[12px] border border-[rgba(4,38,153,0.08)] bg-[#fafafa] px-[14px] py-[12px]">
+                  <p className={`${mono} text-[11px] uppercase tracking-[0.18em] text-[#99a1af]`}>
+                    Trạng thái
+                  </p>
+                  <p className={`${mono} mt-2 text-[13px] font-[500] text-[#080b0d]`}>
+                    {locationSourceLabel}
+                  </p>
+                  {locationCoordinates && (
+                    <p className={`${mono} mt-2 text-[11px] leading-[18px] text-[#4a5565]`}>
+                      {locationCoordinates}
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -549,7 +606,8 @@ function ServiceModal({ service, onClose }: { service: Service; onClose: () => v
 
           <button
             onClick={() => setStep("describe")}
-            className="flex h-[52px] w-full items-center justify-center gap-[8px] rounded-[10px] border-0 bg-[#ee3224] cursor-pointer transition-colors hover:bg-[#d42b1e]"
+            className="flex h-[52px] w-full items-center justify-center gap-[8px] rounded-[10px] border-0 bg-[#ee3224] cursor-pointer transition-colors hover:bg-[#d42b1e] disabled:cursor-not-allowed disabled:bg-[#f3b3ad]"
+            disabled={!locationLabel.trim()}
           >
             <span className={`${mono} text-[16px] font-[500] text-white sm:text-[18px]`}>
               Tiếp tục
@@ -581,8 +639,8 @@ export default function ServicesPage() {
     <div className="overflow-x-hidden bg-white">
       <div className={`${pagePadding} pt-10 pb-16 sm:pt-12 sm:pb-20`}>
         <div className={pageShell}>
-          <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center">
-            <div className="flex size-[92px] items-center justify-center rounded-[20px] bg-[rgba(238,50,36,0.08)] sm:size-[104px] lg:size-[119px]">
+          <div className="resq-reveal mb-8 flex flex-col gap-4 sm:flex-row sm:items-center">
+            <div className="resq-card-lift flex size-[92px] items-center justify-center rounded-[20px] bg-[rgba(238,50,36,0.08)] sm:size-[104px] lg:size-[119px]">
               <Settings size={56} className="text-[#ee3224] sm:size-[60px]" strokeWidth={1.5} />
             </div>
             <div className="max-w-[720px]">
@@ -596,7 +654,7 @@ export default function ServicesPage() {
             </div>
           </div>
 
-          <div className="mb-10 flex flex-wrap gap-[8px]">
+          <div className="resq-reveal resq-reveal--delay-1 mb-10 flex flex-wrap gap-[8px]">
             {filters.map((filter) => (
               <button
                 key={filter.value}
@@ -605,7 +663,7 @@ export default function ServicesPage() {
                   activeFilter === filter.value
                     ? "border-[#ee3224] bg-[#ee3224] text-white"
                     : "border-[rgba(0,0,0,0.1)] bg-white text-[#080b0d] hover:border-[#ee3224]"
-                }`}
+                  }`}
               >
                 <span className={`${mono} text-[13px] font-[500]`}>
                   {filter.label}
@@ -630,7 +688,7 @@ export default function ServicesPage() {
                 <div
                   key={service.id}
                   onClick={() => setSelectedService(service)}
-                  className="relative flex min-h-[231px] cursor-pointer flex-col rounded-[16px] border border-[rgba(0,0,0,0.05)] bg-white p-[24px] transition-shadow hover:shadow-md"
+                  className="resq-card-lift resq-reveal relative flex min-h-[231px] cursor-pointer flex-col rounded-[16px] border border-[rgba(0,0,0,0.05)] bg-white p-[24px] transition-shadow hover:shadow-md"
                 >
                   <div className="absolute top-[16px] right-[16px] flex gap-[4px]">
                     {service.types.includes("xe-may") && (
@@ -662,7 +720,7 @@ export default function ServicesPage() {
             })}
           </div>
 
-          <div className="mt-12 rounded-[24px] bg-[#f7f7f8] px-6 py-8 text-center sm:px-8 sm:py-10 lg:mt-[60px]">
+          <div className="resq-reveal resq-reveal--delay-2 mt-12 rounded-[24px] bg-[#f7f7f8] px-6 py-8 text-center sm:px-8 sm:py-10 lg:mt-[60px]">
             <h2 className={`${mono} mb-[16px] text-[32px] font-[700] text-[#080b0d] sm:text-[40px] lg:text-[48px]`}>
               Cần hỗ trợ ngay?
             </h2>

@@ -48,7 +48,7 @@ export default function TrackingPage() {
             Quay lại
           </Link>
 
-          <div className="mb-8 max-w-[700px] sm:mb-10">
+          <div className="resq-reveal mb-8 max-w-[700px] sm:mb-10">
             <p className={`${mono} mb-4 text-[12px] font-[500] uppercase tracking-[1.8px] text-[#ee3224] sm:text-[13px]`}>
               Theo dõi cứu hộ
             </p>
@@ -66,7 +66,7 @@ export default function TrackingPage() {
             {quickStats.map((item) => (
               <div
                 key={item.label}
-                className="rounded-[16px] border border-[rgba(4,38,153,0.08)] bg-[#f7f7f8] px-5 py-4"
+                className="resq-reveal resq-card-lift rounded-[16px] border border-[rgba(4,38,153,0.08)] bg-[#f7f7f8] px-5 py-4"
               >
                 <p className={`${mono} mb-2 text-[11px] uppercase tracking-[1.4px] text-[#99a1af]`}>
                   {item.label}
@@ -78,7 +78,7 @@ export default function TrackingPage() {
             ))}
           </div>
 
-          <div className="mb-6 rounded-[20px] border border-[rgba(4,38,153,0.08)] bg-white p-5 shadow-[0_18px_50px_rgba(8,11,13,0.04)] sm:p-6">
+          <div className="resq-reveal resq-reveal--delay-1 mb-6 rounded-[20px] border border-[rgba(4,38,153,0.08)] bg-white p-5 shadow-[0_18px_50px_rgba(8,11,13,0.04)] sm:p-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div className="min-w-0">
                 <div className="mb-3 flex flex-wrap gap-2">
@@ -133,11 +133,13 @@ export default function TrackingPage() {
 
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
             <div className="min-w-0">
-              <TrackingLiveMap />
+              <div className="resq-reveal resq-reveal--delay-2">
+                <TrackingLiveMap />
+              </div>
             </div>
 
             <aside className="space-y-5 lg:sticky lg:top-[108px]">
-              <div className="rounded-[20px] border border-[rgba(4,38,153,0.08)] bg-white p-6 shadow-[0_18px_50px_rgba(8,11,13,0.04)]">
+              <div className="resq-reveal resq-card-lift rounded-[20px] border border-[rgba(4,38,153,0.08)] bg-white p-6 shadow-[0_18px_50px_rgba(8,11,13,0.04)]">
                 <div className="mb-4 flex items-center gap-3">
                   <div className="flex size-[42px] items-center justify-center rounded-full bg-[rgba(238,50,36,0.1)]">
                     <Truck size={18} className="text-[#ee3224]" />
@@ -158,7 +160,7 @@ export default function TrackingPage() {
                 </div>
               </div>
 
-              <div className="rounded-[20px] border border-[rgba(4,38,153,0.08)] bg-white p-6 shadow-[0_18px_50px_rgba(8,11,13,0.04)]">
+              <div className="resq-reveal resq-reveal--delay-1 resq-card-lift rounded-[20px] border border-[rgba(4,38,153,0.08)] bg-white p-6 shadow-[0_18px_50px_rgba(8,11,13,0.04)]">
                 <div className="mb-4 flex items-center gap-3">
                   <div className="flex size-[42px] items-center justify-center rounded-full bg-[rgba(238,50,36,0.1)]">
                     <ClipboardList size={18} className="text-[#ee3224]" />
@@ -179,7 +181,7 @@ export default function TrackingPage() {
                 </div>
               </div>
 
-              <div className="rounded-[20px] bg-[#f7f7f8] p-6">
+              <div className="resq-reveal resq-reveal--delay-2 resq-card-lift rounded-[20px] bg-[#f7f7f8] p-6">
                 <p className={`${mono} mb-4 text-[12px] font-[500] uppercase tracking-[1.4px] text-[#99a1af]`}>
                   Lưu ý khi chờ hỗ trợ
                 </p>

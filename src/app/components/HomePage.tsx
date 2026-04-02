@@ -12,7 +12,7 @@ function HeroSection() {
   return (
     <section className={`${sectionPadding} pt-10 pb-10 sm:pt-14 sm:pb-12 lg:pt-[80px] lg:pb-[60px]`}>
       <div className={`${sectionShell} flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between lg:gap-10`}>
-        <div className="max-w-[560px]">
+        <div className="resq-reveal max-w-[560px]">
           <p className={`${mono} mb-4 text-[12px] font-[500] uppercase tracking-[1.8px] text-[#ee3224] sm:text-[13px]`}>
             Cứu hộ giao thông toàn quốc
           </p>
@@ -39,13 +39,15 @@ function HeroSection() {
             </span>
           </div>
         </div>
-        <MapEmbed
-          className="min-h-[300px] w-full lg:min-h-[347px] lg:max-w-[540px]"
-          lat={10.7769}
-          lng={106.7009}
-          label="ResQ tại TP. Hồ Chí Minh"
-          description="Theo dõi khu vực hỗ trợ trọng điểm và điều phối fixer gần nhất."
-        />
+        <div className="resq-reveal resq-reveal--delay-2 w-full lg:max-w-[540px]">
+          <MapEmbed
+            className="min-h-[300px] w-full lg:min-h-[347px]"
+            lat={10.7769}
+            lng={106.7009}
+            label="ResQ tại TP. Hồ Chí Minh"
+            description="Theo dõi khu vực hỗ trợ trọng điểm và điều phối fixer gần nhất."
+          />
+        </div>
       </div>
     </section>
   );
@@ -61,7 +63,7 @@ function StatsSection() {
     <section className={`${sectionPadding} py-6 sm:py-8 lg:py-[40px]`}>
       <div className={`${sectionShell} grid gap-5 md:grid-cols-3 md:gap-4`}>
         {stats.map((s, i) => (
-          <div key={s.value} className="flex flex-col">
+          <div key={s.value} className="resq-reveal resq-card-lift flex flex-col">
             <div className="mb-[16px]">
               <p className={`${mono} text-[36px] font-[700] leading-[1] text-black sm:text-[42px] lg:text-[48px]`}>
                 {s.value}
@@ -107,7 +109,7 @@ function ServicesSection() {
           {services.map((s) => (
             <div
               key={s.title}
-              className="h-full min-h-[188px] rounded-[14px] border border-[rgba(0,0,0,0.1)] bg-white p-[24px]"
+              className="resq-reveal resq-card-lift h-full min-h-[188px] rounded-[14px] border border-[rgba(0,0,0,0.1)] bg-white p-[24px]"
             >
               <div className="mb-[16px] flex size-[48px] items-center justify-center rounded-[10px] bg-[rgba(238,50,36,0.1)]">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#EE3224" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -143,7 +145,7 @@ function StepsSection() {
         </h2>
         <div className="grid gap-8 md:grid-cols-3 md:gap-[32px]">
           {steps.map((s) => (
-            <div key={s.num} className="flex flex-col items-center text-center">
+            <div key={s.num} className="resq-reveal flex flex-col items-center text-center">
               <div className="mb-[16px] flex size-[64px] items-center justify-center rounded-full bg-[#ee3224]">
                 <span className={`${mono} text-[20px] font-[400] text-white`}>{s.num}</span>
               </div>
@@ -165,14 +167,14 @@ function GallerySection() {
   return (
     <section className={`${sectionPadding} py-10 sm:py-12 lg:py-[40px]`}>
       <div className={`${sectionShell} grid gap-5 md:grid-cols-2 md:gap-[32px]`}>
-        <div className="h-[280px] overflow-hidden rounded-[14px] sm:h-[340px] lg:h-[389px]">
+        <div className="resq-reveal resq-card-lift h-[280px] overflow-hidden rounded-[14px] sm:h-[340px] lg:h-[389px]">
           <ImageWithFallback
             src={imgImageWithFallback}
             alt="Sửa xe"
             className="h-full w-full object-cover"
           />
         </div>
-        <div className="h-[280px] overflow-hidden rounded-[14px] sm:h-[340px] lg:h-[389px]">
+        <div className="resq-reveal resq-reveal--delay-1 resq-card-lift h-[280px] overflow-hidden rounded-[14px] sm:h-[340px] lg:h-[389px]">
           <ImageWithFallback
             src={imgImageWithFallback1}
             alt="Cứu hộ"
@@ -200,7 +202,7 @@ function ReviewsSection() {
           {reviews.map((r) => (
             <div
               key={r.name}
-              className="rounded-[14px] border border-[rgba(0,0,0,0.05)] bg-white p-[24px]"
+              className="resq-reveal resq-card-lift rounded-[14px] border border-[rgba(0,0,0,0.05)] bg-white p-[24px]"
             >
               <div className="mb-[12px] flex gap-[4px]">
                 {Array.from({ length: r.stars }).map((_, i) => (
@@ -227,7 +229,7 @@ function ReviewsSection() {
 function CTASection() {
   return (
     <section className="bg-[#ee3224] px-5 py-16 sm:px-8 sm:py-20 lg:px-[84px] lg:py-[80px] xl:px-[120px]">
-      <div className={`${sectionShell} flex flex-col items-center`}>
+      <div className={`${sectionShell} resq-reveal flex flex-col items-center`}>
         <h2 className={`${mono} mb-8 max-w-[839px] text-center text-[32px] leading-[1.35] font-[500] text-white sm:text-[36px] lg:mb-[40px] lg:text-[40px] lg:leading-[60px]`}>
           Luôn đồng hành cùng bạn trên mọi nẻo đường!
         </h2>
