@@ -1,6 +1,6 @@
 import { Link } from "react-router";
-import { MapEmbed } from "./MapEmbed";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
+import { ResQLogoShowcase } from "./ResQLogoShowcase";
 
 const mono = "font-['IBM_Plex_Mono',monospace]";
 const pagePadding = "px-5 sm:px-8 lg:px-[84px] xl:px-[120px]";
@@ -54,14 +54,7 @@ export default function AboutPage() {
               ưu tiên trải nghiệm di động.
             </p>
           </div>
-          <MapEmbed
-            className="min-h-[300px] w-full lg:min-h-[321px] lg:max-w-[703px]"
-            lat={10.7769}
-            lng={106.7009}
-            zoom={11}
-            label="Mạng lưới ResQ"
-            description="Theo dõi khu vực hỗ trợ chính và năng lực điều phối của ResQ."
-          />
+          <ResQLogoShowcase className="min-h-[300px] w-full lg:min-h-[321px] lg:max-w-[703px]" />
         </div>
       </section>
 

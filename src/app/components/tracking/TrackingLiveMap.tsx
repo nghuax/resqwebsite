@@ -34,6 +34,8 @@ type RuntimeRoute = RouteData & {
 
 const MAP_TICK_MS = 120;
 const DEFAULT_ZOOM = 14;
+const MAP_TOP_PADDING = 220;
+const MAP_EDGE_PADDING = 72;
 
 const mono = "font-['IBM_Plex_Mono',monospace]";
 
@@ -236,8 +238,8 @@ export function TrackingLiveMap() {
       }).addTo(map);
 
       map.fitBounds(bounds, {
-        paddingTopLeft: [72, 72],
-        paddingBottomRight: [72, 240],
+        paddingTopLeft: [MAP_EDGE_PADDING, MAP_TOP_PADDING],
+        paddingBottomRight: [MAP_EDGE_PADDING, MAP_EDGE_PADDING],
         maxZoom: 15,
       });
 
@@ -362,8 +364,8 @@ export function TrackingLiveMap() {
     currentMap.flyToBounds(
       [toLeafletPoint(currentUser), toLeafletPoint(currentVehicle)],
       {
-        paddingTopLeft: [72, 72],
-        paddingBottomRight: [72, 240],
+        paddingTopLeft: [MAP_EDGE_PADDING, MAP_TOP_PADDING],
+        paddingBottomRight: [MAP_EDGE_PADDING, MAP_EDGE_PADDING],
         maxZoom: 15,
         duration: 1.1,
       },
@@ -392,7 +394,7 @@ export function TrackingLiveMap() {
   const locationDetail =
     locationSource === "browser"
       ? "Vị trí của bạn đang được lấy trực tiếp từ trình duyệt."
-      : "Hiện tại trang đang dùng vị trí mặc định tại TP. Hồ Chí Minh.";
+      : "Trang đang dùng vị trí mặc định tại TP. Hồ Chí Minh.";
 
   return (
     <div className="relative isolate overflow-hidden rounded-[20px] border border-[rgba(4,38,153,0.08)] bg-white shadow-[0_18px_50px_rgba(8,11,13,0.08)]">
@@ -403,46 +405,20 @@ export function TrackingLiveMap() {
 
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.54),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.24),transparent_24%,transparent_70%,rgba(8,11,13,0.12)_100%)]" />
 
-      <div className="pointer-events-none absolute left-4 top-4 flex max-w-[calc(100%-92px)] flex-wrap gap-2 sm:left-6 sm:top-6 sm:max-w-none">
-        <Chip label={routeModeLabel} />
-        <Chip label={locationModeLabel} />
-        <Chip label={`Trạng thái · ${trackingStatus.label}`} />
-      </div>
+      <div className="pointer-events-none absolute inset-x-3 top-3 sm:inset-x-6 sm:top-6">
+        <div className="pointer-events-auto max-w-[640px] rounded-[22px] border border-white/70 bg-white/92 p-4 shadow-[0_22px_50px_rgba(8,11,13,0.14)] backdrop-blur-[16px] sm:p-5">
+          <div className="flex flex-wrap gap-2">
+            <StatusBadge label={trackingStatus.label} />
+            <Chip label={routeModeLabel} />
+            <Chip label={locationModeLabel} />
+          </div>
 
-      <div className="pointer-events-none absolute right-4 top-4 flex flex-col gap-3 sm:right-6 sm:top-6">
-        <MapActionButton
-          active={false}
-          icon={<LocateFixed size={16} />}
-          label="Vị trí tôi"
-          onClick={handleLocateMe}
-        />
-        <MapActionButton
-          active={false}
-          icon={<Crosshair size={16} />}
-          label="Căn giữa"
-          onClick={handleRecenter}
-        />
-        <MapActionButton
-          active={followVehicle}
-          icon={<Navigation size={16} />}
-          label="Theo xe"
-          onClick={handleToggleFollow}
-        />
-      </div>
-
-      <div className="pointer-events-none absolute inset-x-3 bottom-3 sm:inset-x-6 sm:bottom-6">
-        <div className="pointer-events-auto rounded-[20px] border border-[rgba(4,38,153,0.08)] bg-white p-4 shadow-[0_18px_50px_rgba(8,11,13,0.12)] sm:p-6">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
-              <div className="mb-3 flex flex-wrap gap-2">
-                <StatusBadge label={trackingStatus.label} />
-                <Chip label="Xe box van cứu hộ" muted />
-              </div>
-
-              <p className={`${mono} text-[22px] font-[700] leading-[1.2] text-[#080b0d] sm:text-[28px]`}>
+              <p className={`${mono} text-[20px] font-[700] leading-[1.25] text-[#080b0d] sm:text-[24px]`}>
                 Xe ResQ đang trên đường đến bạn
               </p>
-              <p className={`${mono} mt-2 max-w-[560px] text-[12px] leading-6 text-[#4a5565] sm:text-[13px]`}>
+              <p className={`${mono} mt-2 max-w-[520px] text-[12px] leading-6 text-[#4a5565] sm:text-[13px]`}>
                 {trackingStatus.detail} {locationDetail}
               </p>
             </div>
@@ -455,15 +431,31 @@ export function TrackingLiveMap() {
             </div>
           </div>
 
-          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
             <MetricCard label="Khoảng cách" value={formatDistance(remainingDistanceMeters)} />
             <MetricCard label="ETA" value={formatEta(etaMinutes)} />
             <MetricCard label="Trạng thái" value={trackingStatus.label} />
           </div>
 
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            <Chip label="Vị trí người dùng" muted />
-            <Chip label="Theo dõi fixer mô phỏng" muted />
+          <div className="mt-4 flex flex-wrap gap-2">
+            <MapActionButton
+              active={false}
+              icon={<LocateFixed size={16} />}
+              label="Vị trí tôi"
+              onClick={handleLocateMe}
+            />
+            <MapActionButton
+              active={false}
+              icon={<Crosshair size={16} />}
+              label="Căn giữa"
+              onClick={handleRecenter}
+            />
+            <MapActionButton
+              active={followVehicle}
+              icon={<Navigation size={16} />}
+              label="Theo xe"
+              onClick={handleToggleFollow}
+            />
           </div>
         </div>
       </div>

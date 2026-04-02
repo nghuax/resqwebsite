@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Circle, CircleMarker, Map as LeafletMap } from "leaflet";
 
 type MapEmbedProps = {
@@ -22,6 +22,7 @@ export function MapEmbed({
   const mapRef = useRef<LeafletMap | null>(null);
   const markerRef = useRef<CircleMarker | null>(null);
   const coverageRef = useRef<Circle | null>(null);
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     if (!mapElementRef.current || mapRef.current) {
@@ -46,10 +47,11 @@ export function MapEmbed({
 
       L.control.zoom({ position: "bottomright" }).addTo(map);
 
-      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        maxZoom: 19,
+      L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+        subdomains: "abcd",
+        maxZoom: 20,
         attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; CARTO',
       }).addTo(map);
 
       const coverage = L.circle([lat, lng], {
@@ -69,19 +71,10 @@ export function MapEmbed({
         fillOpacity: 1,
       }).addTo(map);
 
-      marker.bindPopup(
-        `<div><strong>${label}</strong><br />${description}</div>`,
-        {
-          closeButton: false,
-          autoClose: false,
-          closeOnClick: false,
-        },
-      );
-      marker.openPopup();
-
       mapRef.current = map;
       markerRef.current = marker;
       coverageRef.current = coverage;
+      setIsReady(true);
 
       if (typeof ResizeObserver !== "undefined") {
         resizeObserver = new ResizeObserver(() => {
@@ -116,20 +109,39 @@ export function MapEmbed({
       return;
     }
 
-    const nextLatLng = L.latLng(lat, lng);
+    const nextLatLng: [number, number] = [lat, lng];
     map.setView(nextLatLng, zoom, { animate: false });
     marker.setLatLng(nextLatLng);
-    marker.setPopupContent(
-      `<div><strong>${label}</strong><br />${description}</div>`,
-    );
     coverage.setLatLng(nextLatLng);
-  }, [description, label, lat, lng, zoom]);
+  }, [lat, lng, zoom]);
 
   return (
     <div
-      className={`overflow-hidden rounded-[20px] border border-[rgba(4,38,153,0.08)] bg-[#f3f4f6] shadow-[0_20px_70px_rgba(8,11,13,0.08)] ${className}`}
+      className={`relative overflow-hidden rounded-[20px] border border-[rgba(4,38,153,0.08)] bg-[#f3f4f6] shadow-[0_20px_70px_rgba(8,11,13,0.08)] ${className}`}
     >
       <div ref={mapElementRef} className="h-full w-full" />
+
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.5),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.12),transparent_28%,transparent_72%,rgba(8,11,13,0.08)_100%)]" />
+
+      <div className="pointer-events-none absolute left-4 top-4 max-w-[min(280px,calc(100%-2rem))] rounded-[18px] border border-white/75 bg-white/88 px-4 py-3 shadow-[0_14px_36px_rgba(8,11,13,0.08)] backdrop-blur-[14px] sm:left-5 sm:top-5">
+        <p className="font-['IBM_Plex_Mono',monospace] text-[11px] uppercase tracking-[0.18em] text-[#99a1af]">
+          Bản đồ ResQ
+        </p>
+        <p className="mt-1 font-['IBM_Plex_Mono',monospace] text-[14px] font-[700] leading-[1.5] text-[#080b0d]">
+          {label}
+        </p>
+        <p className="mt-1 font-['IBM_Plex_Mono',monospace] text-[12px] leading-[1.7] text-[#4a5565]">
+          {description}
+        </p>
+      </div>
+
+      {!isReady && (
+        <div className="absolute inset-0 flex items-center justify-center bg-white/55 backdrop-blur-[2px]">
+          <div className="rounded-full border border-[rgba(4,38,153,0.08)] bg-white/90 px-4 py-2 font-['IBM_Plex_Mono',monospace] text-[11px] uppercase tracking-[0.18em] text-[#4a5565] shadow-[0_10px_24px_rgba(8,11,13,0.08)]">
+            Đang tải bản đồ
+          </div>
+        </div>
+      )}
     </div>
   );
 }
