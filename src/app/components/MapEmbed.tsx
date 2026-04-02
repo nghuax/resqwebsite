@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import L from "leaflet";
+import type { Circle, CircleMarker, Map as LeafletMap } from "leaflet";
 
 type MapEmbedProps = {
   className?: string;
@@ -19,75 +19,88 @@ export function MapEmbed({
   description = "Đội cứu hộ có thể tiếp cận trong khoảng 15-30 phút.",
 }: MapEmbedProps) {
   const mapElementRef = useRef<HTMLDivElement | null>(null);
-  const mapRef = useRef<L.Map | null>(null);
-  const markerRef = useRef<L.CircleMarker | null>(null);
-  const coverageRef = useRef<L.Circle | null>(null);
+  const mapRef = useRef<LeafletMap | null>(null);
+  const markerRef = useRef<CircleMarker | null>(null);
+  const coverageRef = useRef<Circle | null>(null);
 
   useEffect(() => {
     if (!mapElementRef.current || mapRef.current) {
       return;
     }
 
-    const map = L.map(mapElementRef.current, {
-      zoomControl: false,
-      scrollWheelZoom: false,
-      attributionControl: true,
-    }).setView([lat, lng], zoom);
-
-    L.control.zoom({ position: "bottomright" }).addTo(map);
-
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    }).addTo(map);
-
-    const coverage = L.circle([lat, lng], {
-      radius: 850,
-      color: "#ee3224",
-      weight: 1,
-      fillColor: "#ee3224",
-      fillOpacity: 0.12,
-      interactive: false,
-    }).addTo(map);
-
-    const marker = L.circleMarker([lat, lng], {
-      radius: 10,
-      color: "#ffffff",
-      weight: 4,
-      fillColor: "#ee3224",
-      fillOpacity: 1,
-    }).addTo(map);
-
-    marker.bindPopup(
-      `<div><strong>${label}</strong><br />${description}</div>`,
-      {
-        closeButton: false,
-        autoClose: false,
-        closeOnClick: false,
-      },
-    );
-    marker.openPopup();
-
-    mapRef.current = map;
-    markerRef.current = marker;
-    coverageRef.current = coverage;
-
+    let cancelled = false;
     let resizeObserver: ResizeObserver | null = null;
-    if (typeof ResizeObserver !== "undefined") {
-      resizeObserver = new ResizeObserver(() => {
+
+    const initialize = async () => {
+      const L = await import("leaflet");
+
+      if (!mapElementRef.current || mapRef.current || cancelled) {
+        return;
+      }
+
+      const map = L.map(mapElementRef.current, {
+        zoomControl: false,
+        scrollWheelZoom: false,
+        attributionControl: true,
+      }).setView([lat, lng], zoom);
+
+      L.control.zoom({ position: "bottomright" }).addTo(map);
+
+      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      }).addTo(map);
+
+      const coverage = L.circle([lat, lng], {
+        radius: 850,
+        color: "#ee3224",
+        weight: 1,
+        fillColor: "#ee3224",
+        fillOpacity: 0.12,
+        interactive: false,
+      }).addTo(map);
+
+      const marker = L.circleMarker([lat, lng], {
+        radius: 10,
+        color: "#ffffff",
+        weight: 4,
+        fillColor: "#ee3224",
+        fillOpacity: 1,
+      }).addTo(map);
+
+      marker.bindPopup(
+        `<div><strong>${label}</strong><br />${description}</div>`,
+        {
+          closeButton: false,
+          autoClose: false,
+          closeOnClick: false,
+        },
+      );
+      marker.openPopup();
+
+      mapRef.current = map;
+      markerRef.current = marker;
+      coverageRef.current = coverage;
+
+      if (typeof ResizeObserver !== "undefined") {
+        resizeObserver = new ResizeObserver(() => {
+          map.invalidateSize();
+        });
+        resizeObserver.observe(mapElementRef.current);
+      }
+
+      window.requestAnimationFrame(() => {
         map.invalidateSize();
       });
-      resizeObserver.observe(mapElementRef.current);
-    }
+    };
 
-    window.requestAnimationFrame(() => {
-      map.invalidateSize();
-    });
+    initialize();
 
     return () => {
+      cancelled = true;
       resizeObserver?.disconnect();
-      map.remove();
+      mapRef.current?.remove();
       mapRef.current = null;
       markerRef.current = null;
       coverageRef.current = null;
