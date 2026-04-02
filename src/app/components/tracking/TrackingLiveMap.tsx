@@ -36,7 +36,6 @@ const MAP_TICK_MS = 120;
 const DEFAULT_ZOOM = 14;
 
 const mono = "font-['IBM_Plex_Mono',monospace]";
-const display = "font-['Syne',sans-serif]";
 
 export function TrackingLiveMap() {
   const mapElementRef = useRef<HTMLDivElement | null>(null);
@@ -178,7 +177,7 @@ export function TrackingLiveMap() {
       const bounds = L.latLngBounds(routeLatLngs);
 
       routeShadowRef.current = L.polyline(routeLatLngs, {
-        color: "#e5e7eb",
+        color: "#f7d6d2",
         weight: 12,
         opacity: 0.9,
         lineCap: "round",
@@ -186,7 +185,7 @@ export function TrackingLiveMap() {
       }).addTo(map);
 
       activeRouteRef.current = L.polyline(routeLatLngs, {
-        color: "#111827",
+        color: "#ee3224",
         weight: 4,
         opacity: 0.92,
         lineCap: "round",
@@ -194,9 +193,9 @@ export function TrackingLiveMap() {
       }).addTo(map);
 
       travelledRouteRef.current = L.polyline([toLeafletPoint(vehicleOrigin)], {
-        color: "#9ca3af",
+        color: "#080b0d",
         weight: 5,
-        opacity: 0.95,
+        opacity: 0.72,
         lineCap: "round",
         lineJoin: "round",
       }).addTo(map);
@@ -387,97 +386,99 @@ export function TrackingLiveMap() {
   };
 
   const routeModeLabel =
-    routeSource === "osrm" ? "OSRM live route" : "Straight-line fallback";
+    routeSource === "osrm" ? "Tuyến OSRM" : "Tuyến dự phòng";
   const locationModeLabel =
-    locationSource === "browser" ? "Your browser GPS" : "Ho Chi Minh City fallback";
+    locationSource === "browser" ? "GPS trình duyệt" : "Vị trí mặc định TP.HCM";
+  const locationDetail =
+    locationSource === "browser"
+      ? "Vị trí của bạn đang được lấy trực tiếp từ trình duyệt."
+      : "Hiện tại trang đang dùng vị trí mặc định tại TP. Hồ Chí Minh.";
 
   return (
-    <div className="relative isolate overflow-hidden rounded-[32px] border border-black/8 bg-[#e7eaee] shadow-[0_32px_90px_rgba(15,23,42,0.16)]">
+    <div className="relative isolate overflow-hidden rounded-[20px] border border-[rgba(4,38,153,0.08)] bg-white shadow-[0_18px_50px_rgba(8,11,13,0.08)]">
       <div
         ref={mapElementRef}
-        className="h-[75vh] min-h-[560px] w-full max-w-full bg-[#dfe3e8]"
+        className="h-[500px] w-full max-w-full bg-[#e9edf1] sm:h-[580px] lg:h-[640px]"
       />
 
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.58),transparent_36%),linear-gradient(180deg,rgba(255,255,255,0.42),transparent_24%,transparent_68%,rgba(15,23,42,0.14)_100%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.54),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.24),transparent_24%,transparent_70%,rgba(8,11,13,0.12)_100%)]" />
 
       <div className="pointer-events-none absolute left-4 top-4 flex max-w-[calc(100%-92px)] flex-wrap gap-2 sm:left-6 sm:top-6 sm:max-w-none">
         <Chip label={routeModeLabel} />
         <Chip label={locationModeLabel} />
-        <Chip label={`Status · ${trackingStatus.label}`} />
+        <Chip label={`Trạng thái · ${trackingStatus.label}`} />
       </div>
 
       <div className="pointer-events-none absolute right-4 top-4 flex flex-col gap-3 sm:right-6 sm:top-6">
         <MapActionButton
           active={false}
           icon={<LocateFixed size={16} />}
-          label="Locate me"
+          label="Vị trí tôi"
           onClick={handleLocateMe}
         />
         <MapActionButton
           active={false}
           icon={<Crosshair size={16} />}
-          label="Recenter"
+          label="Căn giữa"
           onClick={handleRecenter}
         />
         <MapActionButton
           active={followVehicle}
           icon={<Navigation size={16} />}
-          label="Follow vehicle"
+          label="Theo xe"
           onClick={handleToggleFollow}
         />
       </div>
 
       <div className="pointer-events-none absolute inset-x-3 bottom-3 sm:inset-x-6 sm:bottom-6">
-        <div className="pointer-events-auto rounded-[30px] border border-white/70 bg-white/90 p-4 shadow-[0_28px_60px_rgba(15,23,42,0.2)] backdrop-blur-xl sm:p-6">
+        <div className="pointer-events-auto rounded-[20px] border border-[rgba(4,38,153,0.08)] bg-white p-4 shadow-[0_18px_50px_rgba(8,11,13,0.12)] sm:p-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div className="min-w-0">
               <div className="mb-3 flex flex-wrap gap-2">
                 <StatusBadge label={trackingStatus.label} />
-                <Chip label="Vehicle · Box van" muted />
+                <Chip label="Xe box van cứu hộ" muted />
               </div>
 
-              <p className={`${display} text-[1.65rem] leading-[1.08] text-[#0f172a] sm:text-[2rem]`}>
-                ResQ Vehicle is on the way
+              <p className={`${mono} text-[22px] font-[700] leading-[1.2] text-[#080b0d] sm:text-[28px]`}>
+                Xe ResQ đang trên đường đến bạn
               </p>
-              <p className={`${mono} mt-2 max-w-[520px] text-[12px] leading-6 text-[#475569] sm:text-[12.5px]`}>
-                {trackingStatus.detail} Simulated movement is running fully on the
-                client for frontend development, with browser geolocation and
-                OSRM routing when available.
+              <p className={`${mono} mt-2 max-w-[560px] text-[12px] leading-6 text-[#4a5565] sm:text-[13px]`}>
+                {trackingStatus.detail} {locationDetail}
               </p>
             </div>
 
-            <div className="inline-flex shrink-0 items-center gap-2 rounded-full border border-black/8 bg-[#f5f5f4] px-4 py-2">
-              <Shield size={16} className="text-[#0f172a]" />
-              <span className={`${mono} text-[11px] uppercase tracking-[0.2em] text-[#0f172a]`}>
-                Unit 07 Ready
+            <div className="inline-flex shrink-0 items-center gap-2 rounded-full bg-[rgba(238,50,36,0.1)] px-4 py-2">
+              <Shield size={16} className="text-[#ee3224]" />
+              <span className={`${mono} text-[11px] uppercase tracking-[0.2em] text-[#ee3224]`}>
+                Đội 07 đang hỗ trợ
               </span>
             </div>
           </div>
 
           <div className="mt-5 grid gap-3 sm:grid-cols-3">
-            <MetricCard label="Distance" value={formatDistance(remainingDistanceMeters)} />
+            <MetricCard label="Khoảng cách" value={formatDistance(remainingDistanceMeters)} />
             <MetricCard label="ETA" value={formatEta(etaMinutes)} />
-            <MetricCard label="Status" value={trackingStatus.label} />
+            <MetricCard label="Trạng thái" value={trackingStatus.label} />
           </div>
 
           <div className="mt-4 flex flex-wrap items-center gap-2">
-            <Chip label="User marker uses browser geolocation" muted />
-            <Chip label="Vehicle marker uses simulated live movement" muted />
+            <Chip label="Vị trí người dùng" muted />
+            <Chip label="Theo dõi fixer mô phỏng" muted />
           </div>
         </div>
       </div>
 
       {isLoading && (
         <div className="absolute inset-0 flex items-center justify-center bg-white/65 backdrop-blur-[4px]">
-          <div className="rounded-[24px] border border-black/8 bg-white/90 px-5 py-4 shadow-[0_24px_60px_rgba(15,23,42,0.14)]">
+          <div className="rounded-[20px] border border-[rgba(4,38,153,0.08)] bg-white px-5 py-4 shadow-[0_18px_50px_rgba(8,11,13,0.12)]">
             <div className="flex items-center gap-3">
-              <LoaderCircle className="animate-spin text-[#0f172a]" size={18} />
+              <LoaderCircle className="animate-spin text-[#ee3224]" size={18} />
               <div>
-                <p className={`${mono} text-[11px] uppercase tracking-[0.22em] text-[#64748b]`}>
-                  Preparing map
+                <p className={`${mono} text-[11px] uppercase tracking-[0.22em] text-[#99a1af]`}>
+                  Đang chuẩn bị bản đồ
                 </p>
-                <p className={`${display} text-[1.1rem] text-[#0f172a]`}>
-                  Locking route and vehicle position...
+                <p className={`${mono} text-[15px] font-[500] text-[#080b0d]`}>
+                  Đang xác định vị trí và tuyến đường...
                 </p>
               </div>
             </div>
@@ -499,8 +500,8 @@ function Chip({
     <span
       className={`${mono} inline-flex items-center rounded-full border px-3 py-1.5 text-[11px] uppercase tracking-[0.16em] ${
         muted
-          ? "border-black/8 bg-[#f8fafc] text-[#475569]"
-          : "border-white/70 bg-white/88 text-[#0f172a] shadow-[0_10px_24px_rgba(15,23,42,0.08)]"
+          ? "border-[rgba(4,38,153,0.08)] bg-[#f7f7f8] text-[#4a5565]"
+          : "border-[rgba(238,50,36,0.12)] bg-white/96 text-[#080b0d] shadow-[0_10px_24px_rgba(8,11,13,0.08)]"
       }`}
     >
       {label}
@@ -510,7 +511,7 @@ function Chip({
 
 function StatusBadge({ label }: { label: string }) {
   return (
-    <span className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-[#111827] px-3 py-1.5">
+    <span className="inline-flex items-center gap-2 rounded-full bg-[#ee3224] px-3 py-1.5">
       <BadgeCheck size={14} className="text-white" />
       <span className={`${mono} text-[11px] uppercase tracking-[0.16em] text-white`}>
         {label}
@@ -527,11 +528,11 @@ function MetricCard({
   value: string;
 }) {
   return (
-    <div className="rounded-[22px] border border-black/8 bg-[#f8fafc] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.68)]">
-      <p className={`${mono} text-[11px] uppercase tracking-[0.18em] text-[#64748b]`}>
+    <div className="rounded-[16px] border border-[rgba(4,38,153,0.08)] bg-[#f7f7f8] px-4 py-4">
+      <p className={`${mono} text-[11px] uppercase tracking-[0.18em] text-[#99a1af]`}>
         {label}
       </p>
-      <p className={`${display} mt-2 text-[1.4rem] leading-none text-[#0f172a]`}>
+      <p className={`${mono} mt-2 text-[21px] font-[700] leading-none text-[#080b0d]`}>
         {value}
       </p>
     </div>
@@ -553,10 +554,10 @@ function MapActionButton({
     <button
       type="button"
       onClick={onClick}
-      className={`pointer-events-auto flex items-center gap-2 rounded-full border px-3 py-3 shadow-[0_20px_36px_rgba(15,23,42,0.18)] transition-all hover:-translate-y-[1px] ${
+      className={`pointer-events-auto flex items-center gap-2 rounded-full border px-3 py-3 shadow-[0_18px_30px_rgba(8,11,13,0.14)] transition-all hover:-translate-y-[1px] ${
         active
-          ? "border-[#111827] bg-[#111827] text-white"
-          : "border-white/80 bg-white/92 text-[#111827] backdrop-blur-xl"
+          ? "border-[#ee3224] bg-[#ee3224] text-white"
+          : "border-[rgba(4,38,153,0.08)] bg-white text-[#080b0d]"
       }`}
       aria-pressed={active}
     >

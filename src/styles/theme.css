@@ -192,7 +192,7 @@
   }
 
   .leaflet-control-attribution a {
-    color: #0f172a;
+    color: #ee3224;
   }
 
   .leaflet-popup-content-wrapper {
@@ -252,10 +252,10 @@
     width: 68px;
     height: 44px;
     border-radius: 18px;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.94) 0%, #e5e7eb 100%);
-    border: 1px solid rgba(15, 23, 42, 0.12);
+    background: linear-gradient(180deg, #ff4a3b 0%, #ee3224 100%);
+    border: 1px solid rgba(170, 32, 20, 0.18);
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.88),
+      inset 0 1px 0 rgba(255, 255, 255, 0.28),
       0 12px 24px rgba(15, 23, 42, 0.12);
   }
 
@@ -266,12 +266,12 @@
 
   .resq-vehicle-marker svg rect,
   .resq-vehicle-marker svg path {
-    fill: #111827;
+    fill: #ffffff;
   }
 
   .resq-vehicle-marker svg circle {
     fill: #f8fafc;
-    stroke: #111827;
+    stroke: #ee3224;
     stroke-width: 3;
   }
 }

@@ -286,41 +286,41 @@ export function formatDistance(distanceMeters: number): string {
 
 export function formatEta(minutes: number): string {
   if (minutes <= 0.75) {
-    return "<1 min";
+    return "Dưới 1 phút";
   }
 
-  return `${Math.round(minutes)} min`;
+  return `${Math.round(minutes)} phút`;
 }
 
 export function getTrackingStatus(remainingDistanceMeters: number): TrackingStatus {
   if (remainingDistanceMeters <= 80) {
     return {
       key: "arrived",
-      label: "Arrived",
-      detail: "Vehicle is ready at your pinned location.",
+      label: "Đã tới nơi",
+      detail: "Fixer đã đến điểm hẹn và sẵn sàng hỗ trợ bạn.",
     };
   }
 
   if (remainingDistanceMeters <= 700) {
     return {
       key: "approaching",
-      label: "Approaching",
-      detail: "Final approach in progress.",
+      label: "Sắp đến",
+      detail: "Fixer đã ở rất gần vị trí của bạn.",
     };
   }
 
   if (remainingDistanceMeters <= 2_400) {
     return {
       key: "on-the-way",
-      label: "On the way",
-      detail: "Driver is following the active route.",
+      label: "Đang đến",
+      detail: "Fixer đang di chuyển và hệ thống liên tục cập nhật ETA.",
     };
   }
 
   return {
     key: "dispatching",
-    label: "Dispatching",
-    detail: "Vehicle is navigating through traffic.",
+    label: "Đang điều phối",
+    detail: "Hệ thống đang tối ưu lộ trình để fixer đến bạn nhanh hơn.",
   };
 }
 
