@@ -33,7 +33,11 @@ const MAP_EDGE_PADDING = 72;
 
 const mono = "font-['IBM_Plex_Mono',monospace]";
 
-export function TrackingLiveMap() {
+export function TrackingLiveMap({
+  destinationPoint,
+}: {
+  destinationPoint?: GeoPoint | null;
+}) {
   const mapElementRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<LeafletMap | null>(null);
   const userMarkerRef = useRef<LeafletMarker | null>(null);
@@ -128,7 +132,7 @@ export function TrackingLiveMap() {
       }
       window.requestAnimationFrame(() => map.invalidateSize());
 
-      const { point: userPoint } = await getUserLocation();
+      const userPoint = destinationPoint ?? (await getUserLocation()).point;
 
       if (cancelled) {
         return;
@@ -320,7 +324,7 @@ export function TrackingLiveMap() {
       mapRef.current = null;
       routeRef.current = null;
     };
-  }, [hasMounted]);
+  }, [destinationPoint, hasMounted]);
 
   const handleLocateMe = () => {
     if (!mapRef.current || !userPosition) {

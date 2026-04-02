@@ -20,11 +20,19 @@ import {
   AlertCircle,
   Check,
   Loader2,
+  Plus,
 } from "lucide-react";
 import {
   ServiceLocationPicker,
   type ServiceLocationValue,
 } from "./location/ServiceLocationPicker";
+import {
+  createRequestDraft,
+  useResQStore,
+  type ActiveResQRequest,
+  type VehicleType,
+} from "./resqStore";
+import { VehicleFormModal } from "./vehicles/VehicleFormModal";
 
 const mono = "font-['IBM_Plex_Mono',monospace]";
 const pagePadding = "px-5 sm:px-8 lg:px-[84px] xl:px-[120px]";
@@ -174,11 +182,6 @@ const allServices: Service[] = [
   },
 ];
 
-const vehicles = [
-  { id: 1, name: "Honda Wave RSX", plate: "59F1-12345", type: "Xe máy" },
-  { id: 2, name: "Toyota Vios", plate: "51G-67890", type: "Ô tô" },
-];
-
 const filters = [
   { label: "Tất cả", value: "all" },
   { label: "Xe máy", value: "xe-may" },
@@ -188,27 +191,31 @@ const filters = [
 type ModalStep = "select" | "describe" | "sending" | "done";
 
 function ServiceModal({ service, onClose }: { service: Service; onClose: () => void }) {
-  const [selectedVehicle, setSelectedVehicle] = useState(1);
+  const { vehicles, addVehicle, setActiveRequest } = useResQStore();
+  const [selectedVehicle, setSelectedVehicle] = useState("");
   const [step, setStep] = useState<ModalStep>("select");
   const [notes, setNotes] = useState("");
   const [selectedLocation, setSelectedLocation] = useState<ServiceLocationValue | null>(null);
   const [locationLabel, setLocationLabel] = useState("");
+  const [showAddVehicleModal, setShowAddVehicleModal] = useState(false);
+  const [submittedRequest, setSubmittedRequest] = useState<ActiveResQRequest | null>(null);
   const navigate = useNavigate();
-  const requestId = "RSQ-330993";
-
+  const allowedVehicleTypes = getAllowedVehicleTypes(service.types);
   const availableVehicles = vehicles.filter((vehicle) =>
-    service.types.includes(vehicle.type === "Xe máy" ? "xe-may" : "o-to"),
+    allowedVehicleTypes.includes(vehicle.type),
   );
+  const defaultVehicle = availableVehicles.find((vehicle) => vehicle.isDefault)
+    ?? availableVehicles[0]
+    ?? null;
   const selectedVehicleData =
     availableVehicles.find((vehicle) => vehicle.id === selectedVehicle) ??
-    availableVehicles[0] ??
-    vehicles[0];
+    defaultVehicle;
 
   useEffect(() => {
     if (!availableVehicles.some((vehicle) => vehicle.id === selectedVehicle)) {
-      setSelectedVehicle(availableVehicles[0]?.id ?? vehicles[0].id);
+      setSelectedVehicle(defaultVehicle?.id ?? "");
     }
-  }, [availableVehicles, selectedVehicle]);
+  }, [availableVehicles, defaultVehicle, selectedVehicle]);
 
   useEffect(() => {
     if (step === "sending") {
@@ -228,6 +235,40 @@ function ServiceModal({ service, onClose }: { service: Service; onClose: () => v
   const locationCoordinates = selectedLocation
     ? `${selectedLocation.point.lat.toFixed(5)}, ${selectedLocation.point.lng.toFixed(5)}`
     : null;
+  const requestId = submittedRequest?.id ?? "RSQ-330993";
+
+  const handleAddVehicle = (payload: {
+    name: string;
+    plate: string;
+    year: string;
+    type: VehicleType;
+  }) => {
+    const nextVehicle = addVehicle(payload);
+    setSelectedVehicle(nextVehicle.id);
+    setShowAddVehicleModal(false);
+  };
+
+  const handleSubmitRequest = () => {
+    if (!selectedVehicleData || !selectedLocation) {
+      return;
+    }
+
+    const nextRequest = createRequestDraft({
+      serviceId: service.id,
+      serviceTitle: service.title,
+      servicePrice: service.price,
+      serviceEta: service.eta,
+      vehicle: selectedVehicleData,
+      locationAddress: locationSummary,
+      locationPoint: selectedLocation.point,
+      locationSource: selectedLocation.source,
+      notes,
+    });
+
+    setSubmittedRequest(nextRequest);
+    setActiveRequest(nextRequest);
+    setStep("sending");
+  };
 
   if (step === "sending") {
     return (
@@ -274,11 +315,11 @@ function ServiceModal({ service, onClose }: { service: Service; onClose: () => v
 
             <div className="mb-[24px] rounded-[10px] border border-[rgba(4,38,153,0.08)] p-[20px]">
               {[
-                ["Dịch vụ", service.title],
-                ["Xe", selectedVehicleData.name],
-                ["Biển số", selectedVehicleData.plate],
+                ["Dịch vụ", submittedRequest?.serviceTitle ?? service.title],
+                ["Xe", submittedRequest?.vehicleName ?? selectedVehicleData?.name ?? "Chưa chọn"],
+                ["Biển số", submittedRequest?.vehiclePlate ?? selectedVehicleData?.plate ?? "--"],
                 ["Vị trí", locationSummary],
-                ["Giá ước tính", service.price],
+                ["Giá ước tính", submittedRequest?.servicePrice ?? service.price],
                 ["Mã yêu cầu", requestId],
               ].map(([label, value]) => (
                 <div
@@ -359,7 +400,7 @@ function ServiceModal({ service, onClose }: { service: Service; onClose: () => v
                     {service.title}
                   </p>
                   <p className={`${mono} text-[12px] text-[#a4a4a4]`}>
-                    {selectedVehicleData.name} · {selectedVehicleData.plate}
+                    {selectedVehicleData?.name ?? "Chưa chọn xe"} · {selectedVehicleData?.plate ?? "--"}
                   </p>
                 </div>
               </div>
@@ -412,8 +453,9 @@ function ServiceModal({ service, onClose }: { service: Service; onClose: () => v
                 </span>
               </button>
               <button
-                onClick={() => setStep("sending")}
-                className="h-[48px] flex-[1.4] rounded-[10px] border-0 bg-[#ee3224] cursor-pointer transition-colors hover:bg-[#d42b1e]"
+                onClick={handleSubmitRequest}
+                className="h-[48px] flex-[1.4] rounded-[10px] border-0 bg-[#ee3224] cursor-pointer transition-colors hover:bg-[#d42b1e] disabled:cursor-not-allowed disabled:bg-[#f3b3ad]"
+                disabled={!selectedVehicleData || !selectedLocation}
               >
                 <span className={`${mono} text-[14px] font-[500] text-white`}>
                   Gửi yêu cầu
@@ -483,63 +525,91 @@ function ServiceModal({ service, onClose }: { service: Service; onClose: () => v
           )}
 
           <div className="mb-[24px]">
-            <p className={`${mono} mb-[12px] text-[11px] font-[500] uppercase tracking-[0.88px] text-[#a4a4a4]`}>
-              Chọn xe
-            </p>
-            <div className="flex flex-col gap-[8px]">
-              {availableVehicles.map((vehicle) => (
-                <button
-                  key={vehicle.id}
-                  onClick={() => setSelectedVehicle(vehicle.id)}
-                  className={`flex items-center gap-[12px] rounded-[10px] bg-white p-[12px] text-left cursor-pointer transition-all ${
-                    selectedVehicle === vehicle.id
-                      ? "border-2 border-[#ee3224]"
-                      : "border border-[rgba(4,38,153,0.08)]"
-                  }`}
-                >
-                  <div
-                    className={`flex size-[36px] shrink-0 items-center justify-center rounded-full ${
+            <div className="mb-[12px] flex items-center justify-between gap-3">
+              <p className={`${mono} text-[11px] font-[500] uppercase tracking-[0.88px] text-[#a4a4a4]`}>
+                Chọn xe
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowAddVehicleModal(true)}
+                className="inline-flex items-center gap-2 rounded-full border border-[rgba(4,38,153,0.08)] bg-white px-3 py-2 transition-colors hover:border-[#ee3224]"
+              >
+                <Plus size={14} className="text-[#ee3224]" />
+                <span className={`${mono} text-[11px] font-[500] uppercase tracking-[0.14em] text-[#080b0d]`}>
+                  Thêm xe
+                </span>
+              </button>
+            </div>
+
+            {availableVehicles.length > 0 ? (
+              <div className="flex flex-col gap-[8px]">
+                {availableVehicles.map((vehicle) => (
+                  <button
+                    key={vehicle.id}
+                    onClick={() => setSelectedVehicle(vehicle.id)}
+                    className={`flex items-center gap-[12px] rounded-[10px] bg-white p-[12px] text-left cursor-pointer transition-all ${
                       selectedVehicle === vehicle.id
-                        ? "bg-[rgba(238,50,36,0.1)]"
-                        : "bg-[#f3f3f5]"
+                        ? "border-2 border-[#ee3224]"
+                        : "border border-[rgba(4,38,153,0.08)]"
                     }`}
                   >
-                    {vehicle.type === "Xe máy" ? (
-                      <Bike
-                        size={16}
-                        className={
-                          selectedVehicle === vehicle.id
-                            ? "text-[#ee3224]"
-                            : "text-[#a4a4a4]"
-                        }
-                      />
-                    ) : (
-                      <Car
-                        size={16}
-                        className={
-                          selectedVehicle === vehicle.id
-                            ? "text-[#ee3224]"
-                            : "text-[#a4a4a4]"
-                        }
-                      />
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <p className={`${mono} text-[14px] font-[500] text-[#080b0d]`}>
-                      {vehicle.name}
-                    </p>
-                    <p className={`${mono} text-[12px] text-[#a4a4a4]`}>
-                      {vehicle.plate} · {vehicle.type}
-                    </p>
-                  </div>
-                  {selectedVehicle === vehicle.id && (
-                    <div className="flex size-[24px] items-center justify-center rounded-full bg-[#ee3224]">
-                      <CheckCircle2 size={14} className="text-white" />
+                    <div
+                      className={`flex size-[36px] shrink-0 items-center justify-center rounded-full ${
+                        selectedVehicle === vehicle.id
+                          ? "bg-[rgba(238,50,36,0.1)]"
+                          : "bg-[#f3f3f5]"
+                      }`}
+                    >
+                      {vehicle.type === "Xe máy" ? (
+                        <Bike
+                          size={16}
+                          className={
+                            selectedVehicle === vehicle.id
+                              ? "text-[#ee3224]"
+                              : "text-[#a4a4a4]"
+                          }
+                        />
+                      ) : (
+                        <Car
+                          size={16}
+                          className={
+                            selectedVehicle === vehicle.id
+                              ? "text-[#ee3224]"
+                              : "text-[#a4a4a4]"
+                          }
+                        />
+                      )}
                     </div>
-                  )}
-                </button>
-              ))}
-            </div>
+                    <div className="flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className={`${mono} text-[14px] font-[500] text-[#080b0d]`}>
+                          {vehicle.name}
+                        </p>
+                        {vehicle.isDefault && (
+                          <span className={`${mono} rounded-full bg-[rgba(238,50,36,0.08)] px-2 py-1 text-[10px] uppercase tracking-[0.12em] text-[#ee3224]`}>
+                            Mặc định
+                          </span>
+                        )}
+                      </div>
+                      <p className={`${mono} text-[12px] text-[#a4a4a4]`}>
+                        {vehicle.plate} · {vehicle.year} · {vehicle.type}
+                      </p>
+                    </div>
+                    {selectedVehicle === vehicle.id && (
+                      <div className="flex size-[24px] items-center justify-center rounded-full bg-[#ee3224]">
+                        <CheckCircle2 size={14} className="text-white" />
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-[14px] border border-dashed border-[rgba(4,38,153,0.12)] bg-[#fafafa] p-4">
+                <p className={`${mono} text-[13px] leading-[22px] text-[#4a5565]`}>
+                  Bạn chưa có {allowedVehicleTypes.length === 1 ? allowedVehicleTypes[0].toLowerCase() : "phương tiện phù hợp"} cho dịch vụ này. Thêm xe để tiếp tục tạo yêu cầu.
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="mb-[24px]">
@@ -607,7 +677,7 @@ function ServiceModal({ service, onClose }: { service: Service; onClose: () => v
           <button
             onClick={() => setStep("describe")}
             className="flex h-[52px] w-full items-center justify-center gap-[8px] rounded-[10px] border-0 bg-[#ee3224] cursor-pointer transition-colors hover:bg-[#d42b1e] disabled:cursor-not-allowed disabled:bg-[#f3b3ad]"
-            disabled={!locationLabel.trim()}
+            disabled={!locationLabel.trim() || !selectedLocation || !selectedVehicleData}
           >
             <span className={`${mono} text-[16px] font-[500] text-white sm:text-[18px]`}>
               Tiếp tục
@@ -616,6 +686,14 @@ function ServiceModal({ service, onClose }: { service: Service; onClose: () => v
           </button>
         </div>
       </div>
+
+      {showAddVehicleModal && (
+        <VehicleFormModal
+          allowedTypes={allowedVehicleTypes}
+          onClose={() => setShowAddVehicleModal(false)}
+          onSave={handleAddVehicle}
+        />
+      )}
     </div>
   );
 }
@@ -748,4 +826,12 @@ export default function ServicesPage() {
       </div>
     </div>
   );
+}
+
+function getAllowedVehicleTypes(serviceTypes: string[]): VehicleType[] {
+  return serviceTypes.includes("xe-may") && serviceTypes.includes("o-to")
+    ? ["Xe máy", "Ô tô"]
+    : serviceTypes.includes("xe-may")
+      ? ["Xe máy"]
+      : ["Ô tô"];
 }

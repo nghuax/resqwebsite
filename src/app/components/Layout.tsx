@@ -1,7 +1,20 @@
 import { Link, useLocation } from "react-router";
 import svgPaths from "../../imports/TrangChủ/svg-t7f5kuudxj";
 import { useAuth } from "./AuthContext";
-import { User, LogOut, Bell, Wrench, CheckCircle2, Tag, X, Menu } from "lucide-react";
+import {
+  User,
+  LogOut,
+  Bell,
+  Wrench,
+  CheckCircle2,
+  Tag,
+  X,
+  Menu,
+  Headset,
+  MessageCircleQuestion,
+  PhoneCall,
+  ChevronRight,
+} from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 
 function LogoIcon() {
@@ -385,6 +398,93 @@ export function Footer() {
         </div>
       </div>
     </footer>
+  );
+}
+
+export function SupportBubble() {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div className="pointer-events-none fixed bottom-4 right-4 z-40 sm:bottom-6 sm:right-6">
+      {isOpen && (
+        <div className="pointer-events-auto mb-3 w-[min(320px,calc(100vw-2rem))] overflow-hidden rounded-[22px] border border-[rgba(4,38,153,0.08)] bg-white shadow-[0_24px_60px_rgba(8,11,13,0.16)]">
+          <div className="bg-[#080b0d] px-5 py-4">
+            <p className="font-['IBM_Plex_Mono',monospace] text-[11px] uppercase tracking-[0.18em] text-[#99a1af]">
+              Hỗ trợ ResQ
+            </p>
+            <p className="mt-2 font-['IBM_Plex_Mono',monospace] text-[18px] font-[700] text-white">
+              Bạn cần trợ giúp nhanh?
+            </p>
+            <p className="mt-2 font-['IBM_Plex_Mono',monospace] text-[12px] leading-[20px] text-[#d1d5dc]">
+              Gọi hotline, mở trang trợ giúp hoặc để lại yêu cầu để đội ResQ hỗ trợ bạn nhanh hơn.
+            </p>
+          </div>
+
+          <div className="grid gap-3 p-4">
+            <a
+              href="tel:19001234"
+              className="flex items-center justify-between rounded-[16px] bg-[#ee3224] px-4 py-3 no-underline transition-colors hover:bg-[#d42b1e]"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex size-[36px] items-center justify-center rounded-full bg-[rgba(255,255,255,0.12)]">
+                  <PhoneCall size={16} className="text-white" />
+                </div>
+                <div>
+                  <p className="font-['IBM_Plex_Mono',monospace] text-[13px] font-[500] text-white">
+                    Hotline khẩn cấp
+                  </p>
+                  <p className="font-['IBM_Plex_Mono',monospace] text-[11px] text-white/80">
+                    1900 1234
+                  </p>
+                </div>
+              </div>
+              <ChevronRight size={16} className="text-white" />
+            </a>
+
+            <Link
+              to="/tro-giup"
+              onClick={() => setIsOpen(false)}
+              className="flex items-center justify-between rounded-[16px] border border-[rgba(4,38,153,0.08)] bg-[#f7f7f8] px-4 py-3 no-underline transition-colors hover:border-[#ee3224]"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex size-[36px] items-center justify-center rounded-full bg-white">
+                  <MessageCircleQuestion size={16} className="text-[#ee3224]" />
+                </div>
+                <div>
+                  <p className="font-['IBM_Plex_Mono',monospace] text-[13px] font-[500] text-[#080b0d]">
+                    Mở trang trợ giúp
+                  </p>
+                  <p className="font-['IBM_Plex_Mono',monospace] text-[11px] text-[#6a7282]">
+                    FAQ, hỗ trợ và liên hệ
+                  </p>
+                </div>
+              </div>
+              <ChevronRight size={16} className="text-[#080b0d]" />
+            </Link>
+          </div>
+        </div>
+      )}
+
+      <button
+        type="button"
+        onClick={() => setIsOpen((value) => !value)}
+        className="pointer-events-auto flex items-center gap-3 rounded-full bg-[#ee3224] px-4 py-3 shadow-[0_20px_44px_rgba(238,50,36,0.28)] transition-transform hover:-translate-y-[1px]"
+        aria-expanded={isOpen}
+        aria-label="Mở hỗ trợ nhanh"
+      >
+        <span className="flex size-[38px] items-center justify-center rounded-full bg-white/14">
+          <Headset size={18} className="text-white" />
+        </span>
+        <div className="text-left">
+          <p className="font-['IBM_Plex_Mono',monospace] text-[10px] uppercase tracking-[0.16em] text-white/80">
+            Hỗ trợ
+          </p>
+          <p className="font-['IBM_Plex_Mono',monospace] text-[13px] font-[500] text-white">
+            ResQ luôn sẵn sàng
+          </p>
+        </div>
+      </button>
+    </div>
   );
 }
 

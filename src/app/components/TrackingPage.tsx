@@ -2,9 +2,11 @@ import { Link } from "react-router";
 import {
   BadgeCheck,
   Bike,
+  Car,
   ChevronLeft,
   ClipboardList,
   Clock3,
+  MapPin,
   PhoneCall,
   ShieldCheck,
   Truck,
@@ -12,22 +14,12 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { TrackingLiveMap } from "./tracking/TrackingLiveMap";
+import { useResQStore, type ActiveResQRequest } from "./resqStore";
+import { HO_CHI_MINH_CITY_FALLBACK } from "./tracking/tracking-utils";
 
 const mono = "font-['IBM_Plex_Mono',monospace]";
 const pagePadding = "px-5 sm:px-8 lg:px-[84px] xl:px-[120px]";
 const pageShell = "mx-auto w-full max-w-[1240px]";
-
-const quickStats = [
-  { label: "Mã yêu cầu", value: "RSQ-330993" },
-  { label: "Dịch vụ", value: "Vá lốp khẩn cấp" },
-  { label: "ETA dự kiến", value: "15-20 phút" },
-];
-
-const trackingHighlights = [
-  { label: "Khoảng cách ước tính", value: "2.4 km" },
-  { label: "ETA hiện tại", value: "15-20 phút" },
-  { label: "Trạng thái", value: "Đang tiếp cận" },
-];
 
 const waitingTips = [
   "Giữ điện thoại sẵn sàng để fixer có thể liên hệ khi cần.",
@@ -35,7 +27,41 @@ const waitingTips = [
   "Chuẩn bị thông tin xe để quá trình hỗ trợ diễn ra nhanh hơn.",
 ];
 
+const fallbackRequest: ActiveResQRequest = {
+  id: "RSQ-330993",
+  serviceId: "va-lop",
+  serviceTitle: "Vá lốp khẩn cấp",
+  servicePrice: "Từ 50.000đ",
+  serviceEta: "15-20 phút",
+  vehicleId: "wave-rsx",
+  vehicleName: "Honda Wave RSX",
+  vehiclePlate: "59F1-12345",
+  vehicleType: "Xe máy",
+  locationAddress: "TP. Hồ Chí Minh",
+  locationPoint: HO_CHI_MINH_CITY_FALLBACK,
+  locationSource: "fallback",
+  notes: "",
+  createdAt: new Date().toISOString(),
+  fixerTeam: "Đội lưu động ResQ 07",
+  fixerVehicle: "Box van cứu hộ",
+  status: "Đang tiếp cận",
+};
+
 export default function TrackingPage() {
+  const { activeRequest } = useResQStore();
+  const request = activeRequest ?? fallbackRequest;
+  const quickStats = [
+    { label: "Mã yêu cầu", value: request.id },
+    { label: "Dịch vụ", value: request.serviceTitle },
+    { label: "ETA dự kiến", value: request.serviceEta },
+  ];
+  const trackingHighlights = [
+    { label: "Xe đã chọn", value: request.vehicleType },
+    { label: "ETA hiện tại", value: request.serviceEta },
+    { label: "Trạng thái", value: request.status },
+  ];
+  const VehicleIcon = request.vehicleType === "Xe máy" ? Bike : Car;
+
   return (
     <div className="overflow-x-hidden bg-white">
       <div className={`${pagePadding} pt-10 pb-16 sm:pt-14 sm:pb-20`}>
@@ -100,16 +126,16 @@ export default function TrackingPage() {
                   Xe ResQ đang trên đường đến bạn
                 </p>
                 <p className={`${mono} mt-2 max-w-[640px] text-[13px] leading-[23px] text-[#4a5565] sm:text-[14px] sm:leading-[24px]`}>
-                  Phần thông tin theo dõi được đưa ra khỏi bản đồ để màn hình
-                  gọn hơn, giúp bạn nhìn rõ lộ trình xe cứu hộ và thao tác nhanh
-                  hơn khi cần định vị lại.
+                  Theo dõi yêu cầu {request.id} với dịch vụ {request.serviceTitle.toLowerCase()},
+                  phương tiện {request.vehicleName} và điểm hẹn đã xác nhận trong
+                  lúc tạo đơn.
                 </p>
               </div>
 
               <div className="inline-flex w-fit shrink-0 items-center gap-2 rounded-full bg-[rgba(238,50,36,0.1)] px-4 py-2.5">
                 <Truck size={16} className="text-[#ee3224]" />
                 <span className={`${mono} text-[11px] uppercase tracking-[0.18em] text-[#ee3224]`}>
-                  Đội 07 đang hỗ trợ
+                  {request.fixerTeam}
                 </span>
               </div>
             </div>
@@ -134,7 +160,7 @@ export default function TrackingPage() {
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
             <div className="min-w-0">
               <div className="resq-reveal resq-reveal--delay-2">
-                <TrackingLiveMap />
+                <TrackingLiveMap destinationPoint={request.locationPoint} />
               </div>
             </div>
 
@@ -149,12 +175,12 @@ export default function TrackingPage() {
                       Fixer phụ trách
                     </p>
                     <p className={`${mono} text-[15px] font-[700] text-[#080b0d]`}>
-                      Đội lưu động ResQ 07
+                      {request.fixerTeam}
                     </p>
                   </div>
                 </div>
                 <div className="space-y-3">
-                  <InfoRow icon={ShieldCheck} label="Phương tiện" value="Box van cứu hộ" />
+                  <InfoRow icon={ShieldCheck} label="Phương tiện" value={request.fixerVehicle} />
                   <InfoRow icon={Clock3} label="Phản hồi" value="Cập nhật liên tục" />
                   <InfoRow icon={PhoneCall} label="Hotline" value="1900 1234" />
                 </div>
@@ -175,9 +201,16 @@ export default function TrackingPage() {
                   </div>
                 </div>
                 <div className="space-y-3">
-                  <InfoRow icon={Wrench} label="Dịch vụ" value="Vá lốp xe máy tận nơi" />
-                  <InfoRow icon={Bike} label="Xe" value="Honda Wave RSX · 59F1-12345" />
-                  <InfoRow icon={Clock3} label="Khu vực" value="TP. Hồ Chí Minh" />
+                  <InfoRow icon={Wrench} label="Dịch vụ" value={request.serviceTitle} />
+                  <InfoRow
+                    icon={VehicleIcon}
+                    label="Xe"
+                    value={`${request.vehicleName} · ${request.vehiclePlate}`}
+                  />
+                  <InfoRow icon={MapPin} label="Điểm hẹn" value={request.locationAddress} />
+                  {request.notes && (
+                    <InfoRow icon={Clock3} label="Ghi chú" value={request.notes} />
+                  )}
                 </div>
               </div>
 

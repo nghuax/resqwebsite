@@ -7,11 +7,13 @@ import {
   Bell,
   Shield,
   LogOut,
-  Pencil,
   Trash2,
   Plus,
+  Bike,
 } from "lucide-react";
 import { useAuth } from "./AuthContext";
+import { useResQStore } from "./resqStore";
+import { VehicleFormModal } from "./vehicles/VehicleFormModal";
 
 const mono = "font-['IBM_Plex_Mono',monospace]";
 const pagePadding = "px-5 sm:px-8 lg:px-[84px] xl:px-[120px]";
@@ -24,25 +26,6 @@ const sidebarItems = [
   { id: "security", label: "Bảo mật", icon: Shield },
 ] as const;
 
-const vehicles = [
-  {
-    id: 1,
-    name: "Honda Wave RSX",
-    plate: "59F1-12345",
-    year: "2022",
-    type: "Xe máy",
-    isDefault: true,
-  },
-  {
-    id: 2,
-    name: "Toyota Vios",
-    plate: "51G-67890",
-    year: "2021",
-    type: "Ô tô",
-    isDefault: false,
-  },
-];
-
 const notifications = [
   { id: "push", label: "Thông báo đẩy", desc: "Nhận thông báo trên điện thoại", on: true },
   { id: "sms", label: "Tin nhắn SMS", desc: "Nhận tin nhắn qua số điện thoại", on: true },
@@ -52,10 +35,12 @@ const notifications = [
 
 export default function AccountPage() {
   const [activeTab, setActiveTab] = useState("vehicles");
+  const [showAddVehicleModal, setShowAddVehicleModal] = useState(false);
   const [notifState, setNotifState] = useState(
     Object.fromEntries(notifications.map((notification) => [notification.id, notification.on])),
   );
   const { user, isLoggedIn, logout } = useAuth();
+  const { vehicles, addVehicle, removeVehicle, setDefaultVehicle } = useResQStore();
   const navigate = useNavigate();
 
   if (!isLoggedIn) {
@@ -200,7 +185,11 @@ export default function AccountPage() {
                         Quản lý danh sách xe để đặt dịch vụ nhanh hơn
                       </p>
                     </div>
-                    <button className="flex h-[38px] items-center justify-center gap-[8px] rounded-[8px] border-0 bg-[#ee3224] px-[16px] cursor-pointer transition-colors hover:bg-[#d42b1e]">
+                    <button
+                      type="button"
+                      onClick={() => setShowAddVehicleModal(true)}
+                      className="flex h-[38px] items-center justify-center gap-[8px] rounded-[8px] border-0 bg-[#ee3224] px-[16px] cursor-pointer transition-colors hover:bg-[#d42b1e]"
+                    >
                       <Plus size={16} className="text-white" />
                       <span className={`${mono} text-[13px] font-[500] text-white`}>
                         Thêm xe
@@ -208,55 +197,74 @@ export default function AccountPage() {
                     </button>
                   </div>
 
-                  <div className="flex flex-col gap-[12px]">
-                    {vehicles.map((vehicle) => (
-                      <div
-                        key={vehicle.id}
-                        className={`flex flex-col gap-4 rounded-[14px] border p-[16px] sm:flex-row sm:items-center ${
-                          vehicle.isDefault
-                            ? "border-[#ee3224]"
-                            : "border-[rgba(4,38,153,0.08)]"
-                        }`}
-                      >
-                        <div className="flex items-center gap-[16px]">
-                          <div className="flex size-[44px] shrink-0 items-center justify-center rounded-full bg-[rgba(238,50,36,0.1)]">
-                            <Car size={20} className="text-[#ee3224]" />
-                          </div>
-                          <div>
-                            <div className="flex flex-wrap items-center gap-[8px]">
-                              <p className={`${mono} text-[14px] font-[500] text-[#080b0d]`}>
-                                {vehicle.name}
-                              </p>
-                              {vehicle.isDefault && (
-                                <span className={`${mono} rounded-[4px] bg-[#ee3224] px-[8px] py-[2px] text-[11px] font-[500] text-white`}>
-                                  Mặc định
-                                </span>
+                  {vehicles.length > 0 ? (
+                    <div className="flex flex-col gap-[12px]">
+                      {vehicles.map((vehicle) => (
+                        <div
+                          key={vehicle.id}
+                          className={`flex flex-col gap-4 rounded-[14px] border p-[16px] sm:flex-row sm:items-center ${
+                            vehicle.isDefault
+                              ? "border-[#ee3224]"
+                              : "border-[rgba(4,38,153,0.08)]"
+                          }`}
+                        >
+                          <div className="flex items-center gap-[16px]">
+                            <div className="flex size-[44px] shrink-0 items-center justify-center rounded-full bg-[rgba(238,50,36,0.1)]">
+                              {vehicle.type === "Xe máy" ? (
+                                <Bike size={20} className="text-[#ee3224]" />
+                              ) : (
+                                <Car size={20} className="text-[#ee3224]" />
                               )}
                             </div>
-                            <p className={`${mono} text-[12px] text-[#a4a4a4]`}>
-                              {vehicle.plate} · {vehicle.year} · {vehicle.type}
-                            </p>
+                            <div>
+                              <div className="flex flex-wrap items-center gap-[8px]">
+                                <p className={`${mono} text-[14px] font-[500] text-[#080b0d]`}>
+                                  {vehicle.name}
+                                </p>
+                                {vehicle.isDefault && (
+                                  <span className={`${mono} rounded-[4px] bg-[#ee3224] px-[8px] py-[2px] text-[11px] font-[500] text-white`}>
+                                    Mặc định
+                                  </span>
+                                )}
+                              </div>
+                              <p className={`${mono} text-[12px] text-[#a4a4a4]`}>
+                                {vehicle.plate} · {vehicle.year} · {vehicle.type}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-2 sm:ml-auto sm:justify-end">
+                            {!vehicle.isDefault && (
+                              <button
+                                type="button"
+                                onClick={() => setDefaultVehicle(vehicle.id)}
+                                className="h-[30px] rounded-[6px] border border-[#d8d8d8] bg-white px-[12px] cursor-pointer transition-colors hover:bg-[#f5f5f5]"
+                              >
+                                <span className={`${mono} text-[11px] text-[#a4a4a4]`}>
+                                  Đặt mặc định
+                                </span>
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => removeVehicle(vehicle.id)}
+                              className="flex size-[32px] items-center justify-center rounded-[6px] border-0 bg-transparent cursor-pointer transition-colors hover:bg-[#fff0f0]"
+                              aria-label={`Xóa xe ${vehicle.name}`}
+                            >
+                              <Trash2 size={16} className="text-[#a4a4a4]" />
+                            </button>
                           </div>
                         </div>
-
-                        <div className="flex flex-wrap items-center gap-2 sm:ml-auto sm:justify-end">
-                          {!vehicle.isDefault && (
-                            <button className="h-[30px] rounded-[6px] border border-[#d8d8d8] bg-white px-[12px] cursor-pointer transition-colors hover:bg-[#f5f5f5]">
-                              <span className={`${mono} text-[11px] text-[#a4a4a4]`}>
-                                Đặt mặc định
-                              </span>
-                            </button>
-                          )}
-                          <button className="flex size-[32px] items-center justify-center rounded-[6px] border-0 bg-transparent cursor-pointer transition-colors hover:bg-[#f5f5f5]">
-                            <Pencil size={16} className="text-[#a4a4a4]" />
-                          </button>
-                          <button className="flex size-[32px] items-center justify-center rounded-[6px] border-0 bg-transparent cursor-pointer transition-colors hover:bg-[#fff0f0]">
-                            <Trash2 size={16} className="text-[#a4a4a4]" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="rounded-[16px] border border-dashed border-[rgba(4,38,153,0.12)] bg-[#fafafa] p-6">
+                      <p className={`${mono} text-[13px] leading-[22px] text-[#4a5565]`}>
+                        Bạn chưa có phương tiện nào. Thêm xe để đặt dịch vụ nhanh hơn
+                        ở lần tiếp theo.
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -362,6 +370,16 @@ export default function AccountPage() {
           </div>
         </div>
       </div>
+
+      {showAddVehicleModal && (
+        <VehicleFormModal
+          onClose={() => setShowAddVehicleModal(false)}
+          onSave={(payload) => {
+            addVehicle(payload);
+            setShowAddVehicleModal(false);
+          }}
+        />
+      )}
     </div>
   );
 }

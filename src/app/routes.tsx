@@ -1,5 +1,5 @@
 import { createBrowserRouter, Outlet } from "react-router";
-import { Navbar, Footer } from "./components/Layout";
+import { Navbar, Footer, SupportBubble } from "./components/Layout";
 import HomePage from "./components/HomePage";
 import AboutPage from "./components/AboutPage";
 import ServicesPage from "./components/ServicesPage";
@@ -19,6 +19,7 @@ function Root() {
         <Outlet />
       </main>
       <Footer />
+      <SupportBubble />
     </div>
   );
 }
@@ -30,6 +31,7 @@ function SignInLayout() {
       <main className="flex-1">
         <Outlet />
       </main>
+      <SupportBubble />
     </div>
   );
 }
