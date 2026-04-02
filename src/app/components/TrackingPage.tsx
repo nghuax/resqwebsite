@@ -1,5 +1,6 @@
 import { Link } from "react-router";
 import {
+  BadgeCheck,
   Bike,
   ChevronLeft,
   ClipboardList,
@@ -20,6 +21,12 @@ const quickStats = [
   { label: "Mã yêu cầu", value: "RSQ-330993" },
   { label: "Dịch vụ", value: "Vá lốp khẩn cấp" },
   { label: "ETA dự kiến", value: "15-20 phút" },
+];
+
+const trackingHighlights = [
+  { label: "Khoảng cách ước tính", value: "2.4 km" },
+  { label: "ETA hiện tại", value: "15-20 phút" },
+  { label: "Trạng thái", value: "Đang tiếp cận" },
 ];
 
 const waitingTips = [
@@ -69,6 +76,59 @@ export default function TrackingPage() {
                 </p>
               </div>
             ))}
+          </div>
+
+          <div className="mb-6 rounded-[20px] border border-[rgba(4,38,153,0.08)] bg-white p-5 shadow-[0_18px_50px_rgba(8,11,13,0.04)] sm:p-6">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div className="min-w-0">
+                <div className="mb-3 flex flex-wrap gap-2">
+                  <span className="inline-flex items-center gap-2 rounded-full bg-[#ee3224] px-3 py-1.5">
+                    <BadgeCheck size={14} className="text-white" />
+                    <span className={`${mono} text-[11px] uppercase tracking-[0.16em] text-white`}>
+                      ResQ đang di chuyển
+                    </span>
+                  </span>
+                  <span className={`${mono} inline-flex items-center rounded-full border border-[rgba(4,38,153,0.08)] bg-[#f7f7f8] px-3 py-1.5 text-[11px] uppercase tracking-[0.16em] text-[#4a5565]`}>
+                    GPS trực tiếp
+                  </span>
+                  <span className={`${mono} inline-flex items-center rounded-full border border-[rgba(4,38,153,0.08)] bg-[#f7f7f8] px-3 py-1.5 text-[11px] uppercase tracking-[0.16em] text-[#4a5565]`}>
+                    Tuyến đường mô phỏng
+                  </span>
+                </div>
+
+                <p className={`${mono} text-[24px] font-[700] leading-[1.2] text-[#080b0d] sm:text-[28px]`}>
+                  Xe ResQ đang trên đường đến bạn
+                </p>
+                <p className={`${mono} mt-2 max-w-[640px] text-[13px] leading-[23px] text-[#4a5565] sm:text-[14px] sm:leading-[24px]`}>
+                  Phần thông tin theo dõi được đưa ra khỏi bản đồ để màn hình
+                  gọn hơn, giúp bạn nhìn rõ lộ trình xe cứu hộ và thao tác nhanh
+                  hơn khi cần định vị lại.
+                </p>
+              </div>
+
+              <div className="inline-flex w-fit shrink-0 items-center gap-2 rounded-full bg-[rgba(238,50,36,0.1)] px-4 py-2.5">
+                <Truck size={16} className="text-[#ee3224]" />
+                <span className={`${mono} text-[11px] uppercase tracking-[0.18em] text-[#ee3224]`}>
+                  Đội 07 đang hỗ trợ
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-5 grid gap-3 sm:grid-cols-3">
+              {trackingHighlights.map((item) => (
+                <div
+                  key={item.label}
+                  className="rounded-[16px] border border-[rgba(4,38,153,0.08)] bg-[#f7f7f8] px-4 py-4"
+                >
+                  <p className={`${mono} text-[11px] uppercase tracking-[0.18em] text-[#99a1af]`}>
+                    {item.label}
+                  </p>
+                  <p className={`${mono} mt-2 text-[19px] font-[700] leading-none text-[#080b0d]`}>
+                    {item.value}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">

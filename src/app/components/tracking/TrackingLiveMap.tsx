@@ -3,19 +3,15 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { Map as LeafletMap, Marker as LeafletMarker, Polyline as LeafletPolyline } from "leaflet";
 import {
-  BadgeCheck,
   Crosshair,
   LocateFixed,
   LoaderCircle,
   Navigation,
-  Shield,
 } from "lucide-react";
 import {
   buildCumulativeDistances,
   createVehicleOrigin,
   fetchRouteData,
-  formatDistance,
-  formatEta,
   getBearingAlongRoute,
   getPointAlongRoute,
   getSegmentIndexAtDistance,
@@ -23,9 +19,7 @@ import {
   getTrackingStatus,
   getUserLocation,
   type GeoPoint,
-  type LocationSource,
   type RouteData,
-  type RouteSource,
 } from "./tracking-utils";
 
 type RuntimeRoute = RouteData & {
@@ -34,7 +28,7 @@ type RuntimeRoute = RouteData & {
 
 const MAP_TICK_MS = 120;
 const DEFAULT_ZOOM = 14;
-const MAP_TOP_PADDING = 220;
+const MAP_TOP_PADDING = 72;
 const MAP_EDGE_PADDING = 72;
 
 const mono = "font-['IBM_Plex_Mono',monospace]";
@@ -60,10 +54,7 @@ export function TrackingLiveMap() {
   const [followVehicle, setFollowVehicle] = useState(true);
   const [userPosition, setUserPosition] = useState<GeoPoint | null>(null);
   const [vehiclePosition, setVehiclePosition] = useState<GeoPoint | null>(null);
-  const [locationSource, setLocationSource] = useState<LocationSource>("fallback");
-  const [routeSource, setRouteSource] = useState<RouteSource>("fallback");
   const [remainingDistanceMeters, setRemainingDistanceMeters] = useState(0);
-  const [etaMinutes, setEtaMinutes] = useState(0);
 
   const trackingStatus = useMemo(
     () => getTrackingStatus(remainingDistanceMeters),
@@ -137,13 +128,12 @@ export function TrackingLiveMap() {
       }
       window.requestAnimationFrame(() => map.invalidateSize());
 
-      const { point: userPoint, source } = await getUserLocation();
+      const { point: userPoint } = await getUserLocation();
 
       if (cancelled) {
         return;
       }
 
-      setLocationSource(source);
       setUserPosition(userPoint);
 
       const vehicleOrigin = createVehicleOrigin(userPoint);
@@ -168,12 +158,8 @@ export function TrackingLiveMap() {
         runtimeRoute.totalDistanceMeters,
       );
 
-      setRouteSource(runtimeRoute.source);
       setVehiclePosition(vehicleOrigin);
       setRemainingDistanceMeters(runtimeRoute.totalDistanceMeters);
-      setEtaMinutes(
-        runtimeRoute.totalDistanceMeters / simulationSpeedRef.current / 60,
-      );
 
       const routeLatLngs = runtimeRoute.points.map(toLeafletPoint);
       const bounds = L.latLngBounds(routeLatLngs);
@@ -270,7 +256,6 @@ export function TrackingLiveMap() {
           currentRoute.totalDistanceMeters - nextTravelledDistance,
           0,
         );
-        const nextEtaMinutes = remainingDistance / simulationSpeedRef.current / 60;
         const segmentIndex = getSegmentIndexAtDistance(
           currentRoute.cumulativeDistances,
           nextTravelledDistance,
@@ -311,7 +296,6 @@ export function TrackingLiveMap() {
 
         setVehiclePosition(nextVehiclePoint);
         setRemainingDistanceMeters(remainingDistance);
-        setEtaMinutes(nextEtaMinutes);
 
         if (remainingDistance <= 0) {
           teardownMovement();
@@ -387,15 +371,6 @@ export function TrackingLiveMap() {
     });
   };
 
-  const routeModeLabel =
-    routeSource === "osrm" ? "Tuyến OSRM" : "Tuyến dự phòng";
-  const locationModeLabel =
-    locationSource === "browser" ? "GPS trình duyệt" : "Vị trí mặc định TP.HCM";
-  const locationDetail =
-    locationSource === "browser"
-      ? "Vị trí của bạn đang được lấy trực tiếp từ trình duyệt."
-      : "Trang đang dùng vị trí mặc định tại TP. Hồ Chí Minh.";
-
   return (
     <div className="relative isolate overflow-hidden rounded-[20px] border border-[rgba(4,38,153,0.08)] bg-white shadow-[0_18px_50px_rgba(8,11,13,0.08)]">
       <div
@@ -405,59 +380,31 @@ export function TrackingLiveMap() {
 
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.54),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.24),transparent_24%,transparent_70%,rgba(8,11,13,0.12)_100%)]" />
 
-      <div className="pointer-events-none absolute inset-x-3 top-3 sm:inset-x-6 sm:top-6">
-        <div className="pointer-events-auto max-w-[640px] rounded-[22px] border border-white/70 bg-white/92 p-4 shadow-[0_22px_50px_rgba(8,11,13,0.14)] backdrop-blur-[16px] sm:p-5">
-          <div className="flex flex-wrap gap-2">
-            <StatusBadge label={trackingStatus.label} />
-            <Chip label={routeModeLabel} />
-            <Chip label={locationModeLabel} />
-          </div>
+      <div className="pointer-events-none absolute left-3 top-3 sm:left-6 sm:top-6">
+        <span className={`${mono} inline-flex items-center rounded-full border border-white/70 bg-white/92 px-3 py-2 text-[11px] uppercase tracking-[0.16em] text-[#4a5565] shadow-[0_14px_30px_rgba(8,11,13,0.08)] backdrop-blur-[14px]`}>
+          {trackingStatus.label}
+        </span>
+      </div>
 
-          <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div className="min-w-0">
-              <p className={`${mono} text-[20px] font-[700] leading-[1.25] text-[#080b0d] sm:text-[24px]`}>
-                Xe ResQ đang trên đường đến bạn
-              </p>
-              <p className={`${mono} mt-2 max-w-[520px] text-[12px] leading-6 text-[#4a5565] sm:text-[13px]`}>
-                {trackingStatus.detail} {locationDetail}
-              </p>
-            </div>
-
-            <div className="inline-flex shrink-0 items-center gap-2 rounded-full bg-[rgba(238,50,36,0.1)] px-4 py-2">
-              <Shield size={16} className="text-[#ee3224]" />
-              <span className={`${mono} text-[11px] uppercase tracking-[0.2em] text-[#ee3224]`}>
-                Đội 07 đang hỗ trợ
-              </span>
-            </div>
-          </div>
-
-          <div className="mt-4 grid gap-3 sm:grid-cols-3">
-            <MetricCard label="Khoảng cách" value={formatDistance(remainingDistanceMeters)} />
-            <MetricCard label="ETA" value={formatEta(etaMinutes)} />
-            <MetricCard label="Trạng thái" value={trackingStatus.label} />
-          </div>
-
-          <div className="mt-4 flex flex-wrap gap-2">
-            <MapActionButton
-              active={false}
-              icon={<LocateFixed size={16} />}
-              label="Vị trí tôi"
-              onClick={handleLocateMe}
-            />
-            <MapActionButton
-              active={false}
-              icon={<Crosshair size={16} />}
-              label="Căn giữa"
-              onClick={handleRecenter}
-            />
-            <MapActionButton
-              active={followVehicle}
-              icon={<Navigation size={16} />}
-              label="Theo xe"
-              onClick={handleToggleFollow}
-            />
-          </div>
-        </div>
+      <div className="pointer-events-none absolute bottom-3 right-3 flex flex-col gap-3 sm:bottom-6 sm:right-6">
+        <MapActionButton
+          active={false}
+          icon={<LocateFixed size={16} />}
+          label="Vị trí tôi"
+          onClick={handleLocateMe}
+        />
+        <MapActionButton
+          active={false}
+          icon={<Crosshair size={16} />}
+          label="Căn giữa"
+          onClick={handleRecenter}
+        />
+        <MapActionButton
+          active={followVehicle}
+          icon={<Navigation size={16} />}
+          label="Theo xe"
+          onClick={handleToggleFollow}
+        />
       </div>
 
       {isLoading && (
@@ -477,56 +424,6 @@ export function TrackingLiveMap() {
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function Chip({
-  label,
-  muted = false,
-}: {
-  label: string;
-  muted?: boolean;
-}) {
-  return (
-    <span
-      className={`${mono} inline-flex items-center rounded-full border px-3 py-1.5 text-[11px] uppercase tracking-[0.16em] ${
-        muted
-          ? "border-[rgba(4,38,153,0.08)] bg-[#f7f7f8] text-[#4a5565]"
-          : "border-[rgba(238,50,36,0.12)] bg-white/96 text-[#080b0d] shadow-[0_10px_24px_rgba(8,11,13,0.08)]"
-      }`}
-    >
-      {label}
-    </span>
-  );
-}
-
-function StatusBadge({ label }: { label: string }) {
-  return (
-    <span className="inline-flex items-center gap-2 rounded-full bg-[#ee3224] px-3 py-1.5">
-      <BadgeCheck size={14} className="text-white" />
-      <span className={`${mono} text-[11px] uppercase tracking-[0.16em] text-white`}>
-        {label}
-      </span>
-    </span>
-  );
-}
-
-function MetricCard({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="rounded-[16px] border border-[rgba(4,38,153,0.08)] bg-[#f7f7f8] px-4 py-4">
-      <p className={`${mono} text-[11px] uppercase tracking-[0.18em] text-[#99a1af]`}>
-        {label}
-      </p>
-      <p className={`${mono} mt-2 text-[21px] font-[700] leading-none text-[#080b0d]`}>
-        {value}
-      </p>
     </div>
   );
 }
