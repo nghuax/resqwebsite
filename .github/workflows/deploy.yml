@@ -34,6 +34,9 @@ jobs:
         run: npm ci
 
       - name: Build site
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://wzippxpprwgdbhzhprmj.supabase.co
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_GrrSpG861rX4sjStAmRCKg_XlgO2cem
         run: npm run build
 
       - name: Prepare SPA fallback
