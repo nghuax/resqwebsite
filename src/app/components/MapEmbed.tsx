@@ -1,5 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import type { Circle, CircleMarker, Map as LeafletMap } from "leaflet";
+import type {
+  Circle,
+  CircleMarker,
+  Map as LeafletMap,
+  Polyline,
+} from "leaflet";
 
 type MapEmbedProps = {
   className?: string;
@@ -9,6 +14,14 @@ type MapEmbedProps = {
   label?: string;
   description?: string;
 };
+
+function buildSupportPoints(lat: number, lng: number): [number, number][] {
+  return [
+    [lat + 0.011, lng - 0.018],
+    [lat - 0.008, lng + 0.014],
+    [lat + 0.004, lng + 0.02],
+  ];
+}
 
 export function MapEmbed({
   className = "",
@@ -22,6 +35,8 @@ export function MapEmbed({
   const mapRef = useRef<LeafletMap | null>(null);
   const markerRef = useRef<CircleMarker | null>(null);
   const coverageRef = useRef<Circle | null>(null);
+  const supportRouteRef = useRef<Polyline | null>(null);
+  const supportMarkersRef = useRef<CircleMarker[]>([]);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
@@ -39,11 +54,12 @@ export function MapEmbed({
         return;
       }
 
+      const nextCenter: [number, number] = [lat, lng];
       const map = L.map(mapElementRef.current, {
         zoomControl: false,
         scrollWheelZoom: false,
         attributionControl: true,
-      }).setView([lat, lng], zoom);
+      }).setView(nextCenter, zoom);
 
       L.control.zoom({ position: "bottomright" }).addTo(map);
 
@@ -54,7 +70,7 @@ export function MapEmbed({
           '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; CARTO',
       }).addTo(map);
 
-      const coverage = L.circle([lat, lng], {
+      coverageRef.current = L.circle(nextCenter, {
         radius: 850,
         color: "#ee3224",
         weight: 1,
@@ -63,43 +79,7 @@ export function MapEmbed({
         interactive: false,
       }).addTo(map);
 
-      const supportPoints: [number, number][] = [
-        [lat + 0.011, lng - 0.018],
-        [lat - 0.008, lng + 0.014],
-        [lat + 0.004, lng + 0.02],
-      ];
-
-      L.polyline(
-        [
-          supportPoints[0],
-          [lat, lng],
-          supportPoints[1],
-          [lat, lng],
-          supportPoints[2],
-        ],
-        {
-          color: "#080b0d",
-          weight: 2,
-          opacity: 0.28,
-          dashArray: "6 8",
-          lineCap: "round",
-          lineJoin: "round",
-          interactive: false,
-        },
-      ).addTo(map);
-
-      supportPoints.forEach((point) => {
-        L.circleMarker(point, {
-          radius: 6,
-          color: "#ffffff",
-          weight: 3,
-          fillColor: "#080b0d",
-          fillOpacity: 1,
-          interactive: false,
-        }).addTo(map);
-      });
-
-      const marker = L.circleMarker([lat, lng], {
+      markerRef.current = L.circleMarker(nextCenter, {
         radius: 10,
         color: "#ffffff",
         weight: 4,
@@ -108,19 +88,7 @@ export function MapEmbed({
       }).addTo(map);
 
       mapRef.current = map;
-      markerRef.current = marker;
-      coverageRef.current = coverage;
       setIsReady(true);
-      map.fitBounds(
-        [
-          [lat, lng],
-          ...supportPoints,
-        ],
-        {
-          padding: [38, 38],
-          maxZoom: zoom,
-        },
-      );
 
       if (typeof ResizeObserver !== "undefined") {
         resizeObserver = new ResizeObserver(() => {
@@ -131,14 +99,19 @@ export function MapEmbed({
 
       window.requestAnimationFrame(() => {
         map.invalidateSize();
+        window.setTimeout(() => map.invalidateSize(), 180);
       });
     };
 
-    initialize();
+    void initialize();
 
     return () => {
       cancelled = true;
       resizeObserver?.disconnect();
+      supportMarkersRef.current.forEach((marker) => marker.remove());
+      supportMarkersRef.current = [];
+      supportRouteRef.current?.remove();
+      supportRouteRef.current = null;
       mapRef.current?.remove();
       mapRef.current = null;
       markerRef.current = null;
@@ -155,10 +128,79 @@ export function MapEmbed({
       return;
     }
 
-    const nextLatLng: [number, number] = [lat, lng];
-    map.setView(nextLatLng, zoom, { animate: false });
-    marker.setLatLng(nextLatLng);
-    coverage.setLatLng(nextLatLng);
+    const nextCenter: [number, number] = [lat, lng];
+    const supportPoints = buildSupportPoints(lat, lng);
+
+    map.setView(nextCenter, zoom, { animate: false });
+    marker.setLatLng(nextCenter);
+    coverage.setLatLng(nextCenter);
+
+    if (supportRouteRef.current) {
+      supportRouteRef.current.setLatLngs([
+        supportPoints[0],
+        nextCenter,
+        supportPoints[1],
+        nextCenter,
+        supportPoints[2],
+      ]);
+    } else {
+      void import("leaflet").then((L) => {
+        if (!mapRef.current || supportRouteRef.current) {
+          return;
+        }
+
+        supportRouteRef.current = L.polyline(
+          [
+            supportPoints[0],
+            nextCenter,
+            supportPoints[1],
+            nextCenter,
+            supportPoints[2],
+          ],
+          {
+            color: "#080b0d",
+            weight: 2,
+            opacity: 0.28,
+            dashArray: "6 8",
+            lineCap: "round",
+            lineJoin: "round",
+            interactive: false,
+          },
+        ).addTo(mapRef.current);
+      });
+    }
+
+    if (supportMarkersRef.current.length === supportPoints.length) {
+      supportMarkersRef.current.forEach((markerItem, index) => {
+        markerItem.setLatLng(supportPoints[index]);
+      });
+    } else {
+      supportMarkersRef.current.forEach((markerItem) => markerItem.remove());
+      supportMarkersRef.current = [];
+
+      void import("leaflet").then((L) => {
+        if (!mapRef.current) {
+          return;
+        }
+
+        supportMarkersRef.current = supportPoints.map((point) =>
+          L.circleMarker(point, {
+            radius: 6,
+            color: "#ffffff",
+            weight: 3,
+            fillColor: "#080b0d",
+            fillOpacity: 1,
+            interactive: false,
+          }).addTo(mapRef.current!),
+        );
+      });
+    }
+
+    map.fitBounds([nextCenter, ...supportPoints], {
+      padding: [38, 38],
+      maxZoom: zoom,
+    });
+    map.invalidateSize();
   }, [lat, lng, zoom]);
 
   return (

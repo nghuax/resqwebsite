@@ -14,6 +14,7 @@ import {
 import { useAuth } from "./AuthContext";
 import { useResQStore } from "./resqStore";
 import { VehicleFormModal } from "./vehicles/VehicleFormModal";
+import { getRoleLabel } from "@/utils/supabase/auth";
 
 const mono = "font-['IBM_Plex_Mono',monospace]";
 const pagePadding = "px-5 sm:px-8 lg:px-[84px] xl:px-[120px]";
@@ -81,14 +82,15 @@ export default function AccountPage() {
     );
   }
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate("/");
   };
 
   const displayName = user?.name || "Nguyễn Văn An";
   const displayPhone = user?.phone || "0901 234 567";
   const displayEmail = user?.email || "an.nguyen@email.com";
+  const displayRole = user ? getRoleLabel(user.role) : "Khách hàng";
 
   return (
     <div className="overflow-x-hidden bg-white">
@@ -127,6 +129,9 @@ export default function AccountPage() {
                     </p>
                     <p className={`${mono} text-[12px] text-[#a4a4a4]`}>
                       {displayPhone}
+                    </p>
+                    <p className={`${mono} mt-1 text-[11px] uppercase tracking-[0.16em] text-[#ee3224]`}>
+                      {displayRole}
                     </p>
                   </div>
                 </div>
@@ -323,6 +328,7 @@ export default function AccountPage() {
                       ["Họ và tên", displayName],
                       ["Số điện thoại", displayPhone],
                       ["Email", displayEmail],
+                      ["Vai trò", displayRole],
                     ].map(([label, value]) => (
                       <div key={label}>
                         <p className={`${mono} mb-[6px] text-[12px] font-[500] text-[#a4a4a4]`}>

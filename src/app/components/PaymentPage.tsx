@@ -62,7 +62,7 @@ function formatVND(value: number) {
 }
 
 export default function PaymentPage() {
-  const { activeRequest } = useResQStore();
+  const { activeRequest, completeActiveRequest } = useResQStore();
   const request = activeRequest ?? fallbackRequest;
   const [selected, setSelected] = useState("momo");
   const [coupon, setCoupon] = useState("RESQ10K");
@@ -97,6 +97,18 @@ export default function PaymentPage() {
       return () => clearTimeout(timeout);
     }
   }, [step]);
+
+  useEffect(() => {
+    if (step !== "success") {
+      return;
+    }
+
+    completeActiveRequest({
+      paymentMethod:
+        paymentMethods.find((method) => method.id === selected)?.name ?? selected,
+      totalAmount: formatVND(currentTotal),
+    });
+  }, [completeActiveRequest, currentTotal, selected, step]);
 
   const handleApplyCoupon = () => {
     if (coupon.trim().toUpperCase() === "RESQ10K") {

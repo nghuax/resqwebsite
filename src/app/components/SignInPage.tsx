@@ -1,24 +1,36 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
+import { CheckCircle2, Eye, EyeOff, ShieldCheck, Wrench } from "lucide-react";
 import { useAuth } from "./AuthContext";
-import { Eye, EyeOff, CheckCircle2 } from "lucide-react";
-import imgGoogle from "../../imports/SignIn/ca90735eb1f499791a041f380b71418fb718b513.png";
-import imgApple from "../../imports/SignIn/1c8fd63b5680b388cf5417bfa7f9c8d740713c82.png";
 
 const mono = "font-['IBM_Plex_Mono',monospace]";
+
+const roleOptions = [
+  {
+    id: "user",
+    label: "Khách hàng",
+    description: "Gọi cứu hộ, lưu xe và theo dõi ETA trong một tài khoản.",
+    icon: ShieldCheck,
+  },
+  {
+    id: "fixer",
+    label: "Fixer",
+    description: "Đăng nhập để nhận điều phối và quản lý ca hỗ trợ ResQ.",
+    icon: Wrench,
+  },
+] as const;
 
 export default function SignInPage() {
   const [searchParams] = useSearchParams();
   const initialTab = searchParams.get("tab") === "register" ? "register" : "login";
+  const initialRole = searchParams.get("role") === "fixer" ? "fixer" : "user";
   const [tab, setTab] = useState<"login" | "register">(initialTab);
+  const [authRole, setAuthRole] = useState<"user" | "fixer">(initialRole);
   const [showPassword, setShowPassword] = useState(false);
-  const { login } = useAuth();
-  const navigate = useNavigate();
-
-  const [loginInput, setLoginInput] = useState("");
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
+  const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [loginError, setLoginError] = useState("");
-
   const [regName, setRegName] = useState("");
   const [regPhone, setRegPhone] = useState("");
   const [regEmail, setRegEmail] = useState("");
@@ -26,94 +38,196 @@ export default function SignInPage() {
   const [regConfirm, setRegConfirm] = useState("");
   const [regAgree, setRegAgree] = useState(false);
   const [regError, setRegError] = useState("");
+  const [noticeMessage, setNoticeMessage] = useState("");
+  const { user, isLoggedIn, isLoading, login, register } = useAuth();
+  const navigate = useNavigate();
 
-  const handleLogin = () => {
-    if (!loginInput.trim()) {
-      setLoginError("Vui lòng nhập số điện thoại hoặc email");
+  useEffect(() => {
+    if (!isLoggedIn) {
       return;
     }
+
+    navigate("/tai-khoan", { replace: true });
+  }, [isLoggedIn, navigate]);
+
+  const clearMessages = () => {
+    setLoginError("");
+    setRegError("");
+    setNoticeMessage("");
+  };
+
+  const handleLogin = async () => {
+    if (!loginEmail.trim()) {
+      setLoginError("Vui lòng nhập email");
+      return;
+    }
+
     if (!loginPassword) {
       setLoginError("Vui lòng nhập mật khẩu");
       return;
     }
+
     setLoginError("");
-    login({
-      name: "Nguyễn Văn A",
-      phone: loginInput.includes("@") ? "0901234567" : loginInput,
-      email: loginInput.includes("@") ? loginInput : "user@resq.vn",
+    setNoticeMessage("");
+
+    const result = await login({
+      email: loginEmail,
+      password: loginPassword,
+      role: authRole,
     });
-    navigate("/");
+
+    if (result.error) {
+      setLoginError(result.error);
+      return;
+    }
+
+    navigate("/tai-khoan");
   };
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (!regName.trim()) {
       setRegError("Vui lòng nhập họ tên");
       return;
     }
+
     if (!regPhone.trim()) {
       setRegError("Vui lòng nhập số điện thoại");
       return;
     }
+
     if (!regEmail.trim()) {
       setRegError("Vui lòng nhập email");
       return;
     }
+
     if (!regPassword) {
       setRegError("Vui lòng nhập mật khẩu");
       return;
     }
+
     if (regPassword.length < 6) {
       setRegError("Mật khẩu phải có ít nhất 6 ký tự");
       return;
     }
+
     if (regPassword !== regConfirm) {
       setRegError("Mật khẩu xác nhận không khớp");
       return;
     }
+
     if (!regAgree) {
       setRegError("Vui lòng đồng ý với điều khoản dịch vụ");
       return;
     }
-    setRegError("");
-    login({ name: regName, phone: regPhone, email: regEmail });
-    navigate("/");
-  };
 
-  const handleSocialLogin = (provider: string) => {
-    login({
-      name: provider === "Google" ? "Google User" : "Apple User",
-      phone: "0901234567",
-      email: provider === "Google" ? "user@gmail.com" : "user@icloud.com",
+    setRegError("");
+    setNoticeMessage("");
+
+    const result = await register({
+      name: regName,
+      phone: regPhone,
+      email: regEmail,
+      password: regPassword,
+      role: authRole,
     });
-    navigate("/");
+
+    if (result.error) {
+      setRegError(result.error);
+      return;
+    }
+
+    if (result.needsEmailConfirmation) {
+      setTab("login");
+      setLoginEmail(regEmail);
+      setLoginPassword("");
+      setNoticeMessage(
+        authRole === "fixer"
+          ? "Tài khoản fixer đã được tạo. Hãy xác nhận email rồi đăng nhập để vào ResQ."
+          : "Tài khoản đã được tạo. Hãy xác nhận email rồi đăng nhập để tiếp tục.",
+      );
+      return;
+    }
+
+    navigate("/tai-khoan");
   };
 
   return (
     <div className="overflow-x-hidden bg-white">
       <div className="flex min-h-[calc(100vh-76px)] items-center justify-center px-5 py-10 sm:px-8 lg:min-h-[calc(100vh-88px)] lg:px-[84px]">
-        <div className="w-full max-w-[460px] rounded-[28px] border border-[rgba(4,38,153,0.08)] bg-white p-6 shadow-[0_22px_70px_rgba(8,11,13,0.08)] sm:p-8">
+        <div className="w-full max-w-[500px] rounded-[28px] border border-[rgba(4,38,153,0.08)] bg-white p-6 shadow-[0_22px_70px_rgba(8,11,13,0.08)] sm:p-8">
           <div className="mb-8 text-center">
             <p className={`${mono} mb-4 text-[12px] font-[500] uppercase tracking-[1.8px] text-[#ee3224]`}>
               Tài khoản ResQ
             </p>
             <h1 className={`${mono} mb-3 text-[28px] font-[700] leading-[1.2] text-[#080b0d] sm:text-[32px]`}>
-              {tab === "login" ? "Chào mừng quay lại" : "Tạo tài khoản mới"}
+              {tab === "login"
+                ? authRole === "fixer"
+                  ? "Truy cập bảng điều phối fixer"
+                  : "Chào mừng quay lại"
+                : authRole === "fixer"
+                  ? "Tạo tài khoản fixer"
+                  : "Tạo tài khoản mới"}
             </h1>
             <p className={`${mono} text-[13px] leading-[22px] text-[#4a5565]`}>
               {tab === "login"
-                ? "Đăng nhập để tiếp tục theo dõi dịch vụ, thanh toán và quản lý tài khoản của bạn."
-                : "Đăng ký nhanh để lưu thông tin xe, gọi cứu hộ và nhận cập nhật từ ResQ."}
+                ? authRole === "fixer"
+                  ? "Đăng nhập để nhận điều phối, theo dõi trạng thái ca hỗ trợ và cập nhật hồ sơ fixer."
+                  : "Đăng nhập để tiếp tục theo dõi dịch vụ, thanh toán và quản lý tài khoản của bạn."
+                : authRole === "fixer"
+                  ? "Tạo tài khoản fixer để ResQ lưu hồ sơ liên hệ, vai trò và thông tin xác thực của bạn."
+                  : "Đăng ký nhanh để lưu thông tin xe, gọi cứu hộ và nhận cập nhật từ ResQ."}
             </p>
+          </div>
+
+          <div className="mb-6 grid gap-3 sm:grid-cols-2">
+            {roleOptions.map((option) => {
+              const Icon = option.icon;
+              const isActive = authRole === option.id;
+
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => {
+                    setAuthRole(option.id);
+                    clearMessages();
+                  }}
+                  className={`rounded-[20px] border px-4 py-4 text-left transition-colors ${
+                    isActive
+                      ? "border-[#ee3224] bg-[rgba(238,50,36,0.08)]"
+                      : "border-[rgba(4,38,153,0.08)] bg-[#f9fafb] hover:border-[#ee3224]/40"
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div
+                      className={`mt-0.5 flex size-[38px] shrink-0 items-center justify-center rounded-[12px] ${
+                        isActive ? "bg-[#ee3224] text-white" : "bg-white text-[#ee3224]"
+                      }`}
+                    >
+                      <Icon size={18} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className={`${mono} text-[13px] font-[700] text-[#080b0d]`}>
+                        {option.label}
+                      </p>
+                      <p className={`${mono} mt-1 text-[11px] leading-[18px] text-[#667085]`}>
+                        {option.description}
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
           </div>
 
           <div className="mb-8 flex border-b border-[rgba(4,38,153,0.08)]">
             <button
+              type="button"
               onClick={() => {
                 setTab("login");
-                setRegError("");
-                setLoginError("");
+                clearMessages();
               }}
-              className={`flex-1 border-0 border-b-2 bg-transparent pb-3 cursor-pointer transition-colors ${
+              className={`flex-1 cursor-pointer border-0 border-b-2 bg-transparent pb-3 transition-colors ${
                 tab === "login"
                   ? "border-[#ee3224] text-[#ee3224]"
                   : "border-transparent text-[#a4a4a4] hover:text-[#080b0d]"
@@ -122,12 +236,12 @@ export default function SignInPage() {
               <span className={`${mono} text-[14px] font-[500]`}>Đăng nhập</span>
             </button>
             <button
+              type="button"
               onClick={() => {
                 setTab("register");
-                setRegError("");
-                setLoginError("");
+                clearMessages();
               }}
-              className={`flex-1 border-0 border-b-2 bg-transparent pb-3 cursor-pointer transition-colors ${
+              className={`flex-1 cursor-pointer border-0 border-b-2 bg-transparent pb-3 transition-colors ${
                 tab === "register"
                   ? "border-[#ee3224] text-[#ee3224]"
                   : "border-transparent text-[#a4a4a4] hover:text-[#080b0d]"
@@ -137,24 +251,33 @@ export default function SignInPage() {
             </button>
           </div>
 
+          {noticeMessage && (
+            <div className="mb-5 rounded-[14px] border border-[rgba(238,50,36,0.16)] bg-[rgba(238,50,36,0.06)] px-4 py-3">
+              <p className={`${mono} text-[12px] leading-[20px] text-[#b42318]`}>
+                {noticeMessage}
+              </p>
+            </div>
+          )}
+
           {tab === "login" ? (
             <>
               <div className="flex flex-col gap-[14px]">
                 <div>
                   <label className={`${mono} mb-[6px] block text-[11px] font-[500] uppercase tracking-[0.88px] text-[#a4a4a4]`}>
-                    Số điện thoại / Email
+                    Email
                   </label>
                   <input
-                    type="text"
-                    value={loginInput}
+                    type="email"
+                    value={loginEmail}
                     onChange={(event) => {
-                      setLoginInput(event.target.value);
+                      setLoginEmail(event.target.value);
                       setLoginError("");
+                      setNoticeMessage("");
                     }}
-                    onKeyDown={(event) => event.key === "Enter" && handleLogin()}
-                    placeholder="Nhập số điện thoại hoặc email"
+                    onKeyDown={(event) => event.key === "Enter" && void handleLogin()}
+                    placeholder="you@example.com"
                     className={`h-[44px] w-full rounded-[12px] border px-[16px] text-[13px] text-black placeholder:text-[#a4a4a4] outline-none transition-colors focus:border-[#ee3224] ${mono} ${
-                      loginError && !loginInput ? "border-[#ee3224]" : "border-black"
+                      loginError && !loginEmail ? "border-[#ee3224]" : "border-black"
                     }`}
                   />
                 </div>
@@ -170,16 +293,18 @@ export default function SignInPage() {
                       onChange={(event) => {
                         setLoginPassword(event.target.value);
                         setLoginError("");
+                        setNoticeMessage("");
                       }}
-                      onKeyDown={(event) => event.key === "Enter" && handleLogin()}
+                      onKeyDown={(event) => event.key === "Enter" && void handleLogin()}
                       placeholder="Nhập mật khẩu"
                       className={`h-[44px] w-full rounded-[12px] border px-[16px] pr-[44px] text-[13px] text-black placeholder:text-[#a4a4a4] outline-none transition-colors focus:border-[#ee3224] ${mono} ${
                         loginError && !loginPassword ? "border-[#ee3224]" : "border-black"
                       }`}
                     />
                     <button
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute top-1/2 right-[12px] -translate-y-1/2 border-0 bg-transparent p-0 cursor-pointer"
+                      type="button"
+                      onClick={() => setShowPassword((currentValue) => !currentValue)}
+                      className="absolute top-1/2 right-[12px] -translate-y-1/2 cursor-pointer border-0 bg-transparent p-0"
                     >
                       {showPassword ? (
                         <EyeOff size={16} className="text-[#a4a4a4]" />
@@ -190,60 +315,26 @@ export default function SignInPage() {
                   </div>
                 </div>
 
-                {loginError && (
-                  <p className={`${mono} text-[12px] text-[#ee3224]`}>{loginError}</p>
-                )}
+                {loginError && <p className={`${mono} text-[12px] text-[#ee3224]`}>{loginError}</p>}
 
-                <div className="flex justify-end">
-                  <button className={`border-0 bg-transparent p-0 cursor-pointer text-[12px] text-[#ee3224] hover:underline ${mono}`}>
-                    Quên mật khẩu?
-                  </button>
+                <div className="rounded-[14px] border border-[rgba(4,38,153,0.08)] bg-[#f9fafb] px-4 py-3">
+                  <p className={`${mono} text-[11px] leading-[18px] text-[#667085]`}>
+                    Số điện thoại vẫn được lưu trong hồ sơ để fixer liên hệ, nhưng phiên bản đăng nhập này
+                    dùng email và mật khẩu qua Supabase để ổn định hơn trên web và app.
+                  </p>
                 </div>
 
                 <button
-                  onClick={handleLogin}
-                  className="mt-1 h-[44px] rounded-[12px] border-0 bg-[#ee3224] cursor-pointer transition-colors hover:bg-[#d42b1e]"
+                  type="button"
+                  disabled={isLoading}
+                  onClick={() => void handleLogin()}
+                  className="mt-1 h-[44px] cursor-pointer rounded-[12px] border-0 bg-[#ee3224] transition-colors hover:bg-[#d42b1e] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <span className={`${mono} text-[13px] font-[500] tracking-[0.88px] text-[#f0f0f1]`}>
-                    Đăng nhập
+                    {isLoading ? "Đang đăng nhập..." : "Đăng nhập"}
                   </span>
                 </button>
               </div>
-
-              <p className={`${mono} my-[24px] text-center text-[14px] font-[500] text-[#080b0d]`}>
-                hoặc
-              </p>
-
-              <div className="flex flex-col gap-[10px]">
-                <button
-                  onClick={() => handleSocialLogin("Google")}
-                  className="flex h-[44px] items-center justify-center gap-[8px] rounded-[12px] border border-black bg-[#e8e8e8] cursor-pointer transition-colors hover:bg-[#d8d8d8]"
-                >
-                  <img src={imgGoogle} alt="Google" className="size-[17px] object-contain" />
-                  <span className={`${mono} text-[12px] font-[500] text-black`}>
-                    Tiếp tục với Google
-                  </span>
-                </button>
-                <button
-                  onClick={() => handleSocialLogin("Apple")}
-                  className="flex h-[44px] items-center justify-center gap-[8px] rounded-[12px] border border-black bg-[#e8e8e8] cursor-pointer transition-colors hover:bg-[#d8d8d8]"
-                >
-                  <img src={imgApple} alt="Apple" className="size-[17px] object-contain" />
-                  <span className={`${mono} text-[12px] font-[500] text-black`}>
-                    Tiếp tục với Apple
-                  </span>
-                </button>
-              </div>
-
-              <p className={`${mono} mt-[24px] text-center text-[13px] text-[#a4a4a4]`}>
-                Chưa có tài khoản?{" "}
-                <button
-                  onClick={() => setTab("register")}
-                  className={`border-0 bg-transparent p-0 cursor-pointer text-[13px] font-[500] text-[#ee3224] hover:underline ${mono}`}
-                >
-                  Đăng ký ngay
-                </button>
-              </p>
             </>
           ) : (
             <>
@@ -302,7 +393,7 @@ export default function SignInPage() {
                   </label>
                   <div className="relative">
                     <input
-                      type={showPassword ? "text" : "password"}
+                      type={showRegisterPassword ? "text" : "password"}
                       value={regPassword}
                       onChange={(event) => {
                         setRegPassword(event.target.value);
@@ -312,10 +403,13 @@ export default function SignInPage() {
                       className={`h-[44px] w-full rounded-[12px] border border-black px-[16px] pr-[44px] text-[13px] text-black placeholder:text-[#a4a4a4] outline-none transition-colors focus:border-[#ee3224] ${mono}`}
                     />
                     <button
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute top-1/2 right-[12px] -translate-y-1/2 border-0 bg-transparent p-0 cursor-pointer"
+                      type="button"
+                      onClick={() =>
+                        setShowRegisterPassword((currentValue) => !currentValue)
+                      }
+                      className="absolute top-1/2 right-[12px] -translate-y-1/2 cursor-pointer border-0 bg-transparent p-0"
                     >
-                      {showPassword ? (
+                      {showRegisterPassword ? (
                         <EyeOff size={16} className="text-[#a4a4a4]" />
                       ) : (
                         <Eye size={16} className="text-[#a4a4a4]" />
@@ -365,7 +459,7 @@ export default function SignInPage() {
                       setRegConfirm(event.target.value);
                       setRegError("");
                     }}
-                    onKeyDown={(event) => event.key === "Enter" && handleRegister()}
+                    onKeyDown={(event) => event.key === "Enter" && void handleRegister()}
                     placeholder="Nhập lại mật khẩu"
                     className={`h-[44px] w-full rounded-[12px] border px-[16px] text-[13px] text-black placeholder:text-[#a4a4a4] outline-none transition-colors focus:border-[#ee3224] ${mono} ${
                       regConfirm && regConfirm !== regPassword
@@ -380,13 +474,14 @@ export default function SignInPage() {
                   )}
                 </div>
 
-                <label className="mt-[2px] flex items-start gap-[8px] cursor-pointer">
+                <label className="mt-[2px] flex items-start gap-[8px]">
                   <button
+                    type="button"
                     onClick={() => {
-                      setRegAgree(!regAgree);
+                      setRegAgree((currentValue) => !currentValue);
                       setRegError("");
                     }}
-                    className={`mt-[1px] flex size-[18px] shrink-0 items-center justify-center rounded-[4px] border cursor-pointer transition-colors ${
+                    className={`mt-[1px] flex size-[18px] shrink-0 items-center justify-center rounded-[4px] border transition-colors ${
                       regAgree
                         ? "border-[#ee3224] bg-[#ee3224]"
                         : "border-[#a4a4a4] bg-white"
@@ -395,60 +490,37 @@ export default function SignInPage() {
                     {regAgree && <CheckCircle2 size={12} className="text-white" />}
                   </button>
                   <span className={`${mono} text-[12px] leading-[18px] text-[#4a5565]`}>
-                    Tôi đồng ý với <span className="cursor-pointer text-[#ee3224] underline">Điều khoản dịch vụ</span> và{" "}
-                    <span className="cursor-pointer text-[#ee3224] underline">Chính sách bảo mật</span> của ResQ
+                    Tôi đồng ý với <span className="text-[#ee3224] underline">Điều khoản dịch vụ</span> và{" "}
+                    <span className="text-[#ee3224] underline">Chính sách bảo mật</span> của ResQ
                   </span>
                 </label>
 
-                {regError && (
-                  <p className={`${mono} text-[12px] text-[#ee3224]`}>{regError}</p>
-                )}
+                {regError && <p className={`${mono} text-[12px] text-[#ee3224]`}>{regError}</p>}
 
                 <button
-                  onClick={handleRegister}
-                  className="mt-1 h-[44px] rounded-[12px] border-0 bg-[#ee3224] cursor-pointer transition-colors hover:bg-[#d42b1e]"
+                  type="button"
+                  disabled={isLoading}
+                  onClick={() => void handleRegister()}
+                  className="mt-1 h-[44px] cursor-pointer rounded-[12px] border-0 bg-[#ee3224] transition-colors hover:bg-[#d42b1e] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <span className={`${mono} text-[13px] font-[500] tracking-[0.88px] text-[#f0f0f1]`}>
-                    Tạo tài khoản
+                    {isLoading ? "Đang tạo tài khoản..." : "Tạo tài khoản"}
                   </span>
                 </button>
               </div>
-
-              <p className={`${mono} my-[24px] text-center text-[14px] font-[500] text-[#080b0d]`}>
-                hoặc
-              </p>
-
-              <div className="flex flex-col gap-[10px]">
-                <button
-                  onClick={() => handleSocialLogin("Google")}
-                  className="flex h-[44px] items-center justify-center gap-[8px] rounded-[12px] border border-black bg-[#e8e8e8] cursor-pointer transition-colors hover:bg-[#d8d8d8]"
-                >
-                  <img src={imgGoogle} alt="Google" className="size-[17px] object-contain" />
-                  <span className={`${mono} text-[12px] font-[500] text-black`}>
-                    Đăng ký với Google
-                  </span>
-                </button>
-                <button
-                  onClick={() => handleSocialLogin("Apple")}
-                  className="flex h-[44px] items-center justify-center gap-[8px] rounded-[12px] border border-black bg-[#e8e8e8] cursor-pointer transition-colors hover:bg-[#d8d8d8]"
-                >
-                  <img src={imgApple} alt="Apple" className="size-[17px] object-contain" />
-                  <span className={`${mono} text-[12px] font-[500] text-black`}>
-                    Đăng ký với Apple
-                  </span>
-                </button>
-              </div>
-
-              <p className={`${mono} mt-[24px] text-center text-[13px] text-[#a4a4a4]`}>
-                Đã có tài khoản?{" "}
-                <button
-                  onClick={() => setTab("login")}
-                  className={`border-0 bg-transparent p-0 cursor-pointer text-[13px] font-[500] text-[#ee3224] hover:underline ${mono}`}
-                >
-                  Đăng nhập
-                </button>
-              </p>
             </>
+          )}
+
+          <div className="mt-6 rounded-[16px] border border-[rgba(4,38,153,0.08)] bg-[#f9fafb] px-4 py-3">
+            <p className={`${mono} text-[11px] leading-[18px] text-[#667085]`}>
+              Đăng nhập email/mật khẩu đã được nối với Supabase cho cả khách hàng và fixer. Nếu bạn muốn bật Google hoặc Apple sau đó, chỉ cần cấu hình provider tương ứng trong Supabase Auth.
+            </p>
+          </div>
+
+          {user?.email && (
+            <p className={`${mono} mt-4 text-center text-[11px] text-[#99a1af]`}>
+              Phiên hiện tại: {user.email}
+            </p>
           )}
         </div>
       </div>

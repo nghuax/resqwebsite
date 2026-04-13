@@ -66,6 +66,9 @@ export function Navbar() {
   }, [location.pathname]);
 
   const markAllRead = () => setNotifs((ns) => ns.map((n) => ({ ...n, read: true })));
+  const handleLogout = () => {
+    void logout();
+  };
 
   const notifIcon = (type: string) => {
     if (type === "service") return <Wrench size={16} className="text-[#ee3224]" />;
@@ -208,7 +211,7 @@ export function Navbar() {
                 Tài khoản
               </Link>
               <button
-                onClick={logout}
+                onClick={handleLogout}
                 className="flex items-center gap-[4px] border-0 bg-transparent p-0 cursor-pointer transition-colors hover:text-[#ee3224]"
               >
                 <LogOut size={16} className="text-[#a4a4a4]" />
@@ -290,7 +293,7 @@ export function Navbar() {
                   Đi tới tài khoản
                 </Link>
                 <button
-                  onClick={logout}
+                  onClick={handleLogout}
                   className="flex h-[44px] items-center justify-center rounded-[12px] border border-[rgba(4,38,153,0.08)] bg-transparent font-['IBM_Plex_Mono',monospace] text-[14px] font-[500] text-[#080b0d]"
                 >
                   Đăng xuất

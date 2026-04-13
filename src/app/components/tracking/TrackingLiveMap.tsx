@@ -38,6 +38,8 @@ export function TrackingLiveMap({
 }: {
   destinationPoint?: GeoPoint | null;
 }) {
+  const destinationLat = destinationPoint?.lat ?? null;
+  const destinationLng = destinationPoint?.lng ?? null;
   const mapElementRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<LeafletMap | null>(null);
   const userMarkerRef = useRef<LeafletMarker | null>(null);
@@ -77,6 +79,14 @@ export function TrackingLiveMap({
     if (!hasMounted || !mapElementRef.current) {
       return;
     }
+
+    setIsLoading(true);
+    setFollowVehicle(true);
+    setUserPosition(null);
+    setVehiclePosition(null);
+    setRemainingDistanceMeters(0);
+    followVehicleRef.current = true;
+    lastFollowPanAtRef.current = 0;
 
     let cancelled = false;
     const routeAbortController = new AbortController();
@@ -130,9 +140,15 @@ export function TrackingLiveMap({
         });
         resizeObserverRef.current.observe(mapElementRef.current);
       }
-      window.requestAnimationFrame(() => map.invalidateSize());
+      window.requestAnimationFrame(() => {
+        map.invalidateSize();
+        window.setTimeout(() => map.invalidateSize(), 180);
+      });
 
-      const userPoint = destinationPoint ?? (await getUserLocation()).point;
+      const userPoint =
+        destinationLat !== null && destinationLng !== null
+          ? { lat: destinationLat, lng: destinationLng }
+          : (await getUserLocation()).point;
 
       if (cancelled) {
         return;
@@ -324,7 +340,7 @@ export function TrackingLiveMap({
       mapRef.current = null;
       routeRef.current = null;
     };
-  }, [destinationPoint, hasMounted]);
+  }, [destinationLat, destinationLng, hasMounted]);
 
   const handleLocateMe = () => {
     if (!mapRef.current || !userPosition) {

@@ -168,6 +168,7 @@ export function ServiceLocationPicker({
 
       window.requestAnimationFrame(() => {
         map.invalidateSize();
+        window.setTimeout(() => map.invalidateSize(), 180);
       });
 
       setHasMapReady(true);
