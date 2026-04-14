@@ -20,6 +20,7 @@ import {
 } from "../location/ServiceLocationPicker";
 import {
   createRequestDraft,
+  confirmIncomingRequest,
   useResQStore,
   type ActiveResQRequest,
   type VehicleType,
@@ -30,6 +31,7 @@ import {
   type ResQService,
 } from "../resqData";
 import { VehicleFormModal } from "../vehicles/VehicleFormModal";
+import { useAuth } from "../AuthContext";
 
 const mono = "font-['IBM_Plex_Mono',monospace]";
 
@@ -117,10 +119,10 @@ function ServiceRequestSheet({
         <div className="w-full max-w-[420px] rounded-[30px] bg-white px-5 py-8 text-center shadow-[0_28px_70px_rgba(8,11,13,0.3)]">
           <Loader2 size={42} className="mx-auto animate-spin text-[#ee3224]" />
           <h2 className="mt-5 font-['Syne',sans-serif] text-[28px] leading-[0.95] font-[700] tracking-[-0.04em] text-[#080b0d]">
-            Đang điều phối fixer
+            Đang gửi yêu cầu
           </h2>
           <p className={`${mono} mt-3 text-[12px] leading-[20px] text-[#667085]`}>
-            Hệ thống đang tìm đội hỗ trợ gần bạn nhất.
+            Hệ thống đang chuyển request sang trạng thái chờ fixer xác nhận.
           </p>
         </div>
       </div>
@@ -144,7 +146,7 @@ function ServiceRequestSheet({
             Yêu cầu đã được gửi
           </h2>
           <p className={`${mono} mt-3 text-[12px] leading-[20px] text-[#667085]`}>
-            Fixer đang được điều phối đến vị trí của bạn.
+            Request đang chờ fixer xác nhận trước khi bắt đầu di chuyển.
           </p>
 
           <div className="mt-5 space-y-3 rounded-[24px] bg-[#faf8f5] p-4">
@@ -510,9 +512,14 @@ function ServiceRequestSheet({
 }
 
 export default function MobileServicesPage() {
+  const { user } = useAuth();
   const [activeFilter, setActiveFilter] = useState("all");
   const [selectedService, setSelectedService] = useState<ResQService | null>(null);
-  const { activeRequest } = useResQStore();
+  const { activeRequest, incomingRequests } = useResQStore();
+
+  if (user?.role === "fixer") {
+    return <MobileFixerServicesPage incomingRequests={incomingRequests} activeRequest={activeRequest} />;
+  }
 
   const filteredServices =
     activeFilter === "all"
@@ -666,6 +673,140 @@ export default function MobileServicesPage() {
           service={selectedService}
           onClose={() => setSelectedService(null)}
         />
+      )}
+    </div>
+  );
+}
+
+function MobileFixerServicesPage({
+  incomingRequests,
+  activeRequest,
+}: {
+  incomingRequests: ReturnType<typeof useResQStore>["incomingRequests"];
+  activeRequest: ReturnType<typeof useResQStore>["activeRequest"];
+}) {
+  return (
+    <div className="space-y-5 pb-5">
+      <section className="rounded-[30px] bg-[linear-gradient(135deg,#111111_0%,#241514_42%,#ee3224_100%)] px-5 py-5 text-white shadow-[0_24px_60px_rgba(8,11,13,0.22)]">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className={`${mono} text-[10px] uppercase tracking-[0.22em] text-white/56`}>
+              Fixer services
+            </p>
+            <h1 className="mt-3 font-['Syne',sans-serif] text-[34px] leading-[0.92] font-[700] tracking-[-0.05em]">
+              Nhận request mới từ khách hàng
+            </h1>
+          </div>
+          <Link
+            to="/theo-doi"
+            className="flex size-[44px] shrink-0 items-center justify-center rounded-[18px] border border-white/10 bg-white/10 text-white no-underline"
+          >
+            <ChevronRight size={18} />
+          </Link>
+        </div>
+
+        <p className={`${mono} mt-3 max-w-[300px] text-[12px] leading-[20px] text-white/74`}>
+          Xác nhận request tại đây rồi chuyển sang Theo Dõi để cập nhật trạng thái xử lý cho khách hàng.
+        </p>
+
+        {activeRequest && (
+          <Link
+            to="/theo-doi"
+            className="mt-4 block rounded-[22px] border border-white/12 bg-white/10 px-4 py-4 text-white no-underline backdrop-blur"
+          >
+            <p className={`${mono} text-[10px] uppercase tracking-[0.18em] text-white/56`}>
+              Đơn đang phụ trách
+            </p>
+            <p className="mt-2 font-['Syne',sans-serif] text-[24px] leading-none font-[700] tracking-[-0.04em]">
+              {activeRequest.serviceTitle}
+            </p>
+            <p className={`${mono} mt-2 text-[11px] leading-[18px] text-white/78`}>
+              {activeRequest.requesterName} · {activeRequest.status}
+            </p>
+          </Link>
+        )}
+      </section>
+
+      {incomingRequests.length === 0 ? (
+        <section className="rounded-[26px] border border-dashed border-black/10 bg-white/88 p-5 text-center shadow-[0_18px_40px_rgba(8,11,13,0.06)]">
+          <div className="mx-auto flex size-[56px] items-center justify-center rounded-[22px] bg-[rgba(238,50,36,0.08)]">
+            <ClipboardList size={24} className="text-[#ee3224]" />
+          </div>
+          <h2 className="mt-4 font-['Syne',sans-serif] text-[26px] leading-[0.95] font-[700] tracking-[-0.04em] text-[#080b0d]">
+            Bạn chưa được nhận request nào
+          </h2>
+          <p className={`${mono} mt-3 text-[12px] leading-[20px] text-[#667085]`}>
+            Khi khách hàng gửi yêu cầu mới, request chờ fixer xác nhận sẽ xuất hiện tại đây.
+          </p>
+        </section>
+      ) : (
+        <section className="space-y-3">
+          {incomingRequests.map((request) => {
+            const VehicleIcon = request.vehicleType === "Xe máy" ? Bike : Car;
+
+            return (
+              <div
+                key={request.id}
+                className="rounded-[26px] bg-white/92 p-4 text-left shadow-[0_18px_40px_rgba(8,11,13,0.06)]"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className={`${mono} text-[10px] uppercase tracking-[0.18em] text-[#99a1af]`}>
+                      {request.id}
+                    </p>
+                    <p className={`${mono} mt-2 text-[12px] font-[500] leading-[19px] text-[#080b0d]`}>
+                      {request.serviceTitle}
+                    </p>
+                    <p className={`${mono} mt-2 text-[11px] leading-[19px] text-[#667085]`}>
+                      {request.requesterName} · {request.requesterPhone || "Chưa có số liên hệ"}
+                    </p>
+                  </div>
+
+                  <span className={`${mono} rounded-full bg-[rgba(238,50,36,0.08)] px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-[#ee3224]`}>
+                    {request.serviceEta}
+                  </span>
+                </div>
+
+                <div className="mt-4 space-y-3">
+                  <div className="flex items-start gap-3 rounded-[20px] bg-[#faf8f5] px-3 py-3">
+                    <VehicleIcon size={16} className="mt-[2px] shrink-0 text-[#ee3224]" />
+                    <div className="min-w-0">
+                      <p className={`${mono} text-[10px] uppercase tracking-[0.16em] text-[#99a1af]`}>
+                        Xe
+                      </p>
+                      <p className={`${mono} mt-1 text-[11px] leading-[18px] text-[#080b0d]`}>
+                        {request.vehicleName} · {request.vehiclePlate}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3 rounded-[20px] bg-[#faf8f5] px-3 py-3">
+                    <MapPin size={16} className="mt-[2px] shrink-0 text-[#ee3224]" />
+                    <div className="min-w-0">
+                      <p className={`${mono} text-[10px] uppercase tracking-[0.16em] text-[#99a1af]`}>
+                        Vị trí
+                      </p>
+                      <p className={`${mono} mt-1 text-[11px] leading-[18px] text-[#080b0d]`}>
+                        {request.locationAddress}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => {
+                    confirmIncomingRequest(request.id);
+                  }}
+                  className="mt-4 rounded-[18px] bg-[#ee3224] px-4 py-3 text-white"
+                >
+                  <span className={`${mono} text-[10px] uppercase tracking-[0.18em]`}>
+                    Xác nhận đơn
+                  </span>
+                </button>
+              </div>
+            );
+          })}
+        </section>
       )}
     </div>
   );

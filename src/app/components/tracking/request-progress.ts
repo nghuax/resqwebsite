@@ -23,6 +23,8 @@ export function getServiceProgress(status: string) {
     ? 3
     : normalizedStatus.includes("hỗ trợ")
       ? 3
+      : normalizedStatus.includes("chờ")
+        ? 0
       : normalizedStatus.includes("xác nhận")
         ? 1
         : 2;

@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import type { Session } from "@supabase/supabase-js";
-import { setResQStoreScope } from "./resqStore";
+import { refreshResQStore, setResQStoreScope } from "./resqStore";
 import {
   buildAuthUser,
   formatAuthError,
@@ -98,7 +98,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       setUser(nextUser);
-      setResQStoreScope(nextUser.id);
+      setResQStoreScope(nextUser);
+      void refreshResQStore(nextUser);
       setIsLoading(false);
     };
 
@@ -127,6 +128,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       subscription.unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    void refreshResQStore(user);
+
+    const intervalId = window.setInterval(() => {
+      void refreshResQStore(user);
+    }, 12000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [user]);
 
   const login = useCallback(async ({ email, password, role }: LoginInput) => {
     setIsLoading(true);
@@ -160,7 +177,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setSession(data.session ?? null);
     setUser(authUser);
-    setResQStoreScope(authUser?.id ?? null);
+    setResQStoreScope(authUser);
     setIsLoading(false);
 
     return { user: authUser };
@@ -203,7 +220,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setSession(data.session ?? null);
     setUser(authUser);
-    setResQStoreScope(authUser?.id ?? null);
+    setResQStoreScope(authUser);
     setIsLoading(false);
 
     return {
