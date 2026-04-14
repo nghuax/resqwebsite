@@ -77,6 +77,7 @@ export default function PaymentPage() {
   const [tip, setTip] = useState<number | null>(null);
   const [copied, setCopied] = useState(false);
   const navigate = useNavigate();
+  const currentTotal = applied ? TOTAL : SERVICE_FEE + TRAVEL_FEE;
 
   const txnId = "TXN-" + Math.random().toString(36).substring(2, 8).toUpperCase();
   const now = new Date();
@@ -144,8 +145,6 @@ export default function PaymentPage() {
     }
     return nums;
   };
-
-  const currentTotal = applied ? TOTAL : SERVICE_FEE + TRAVEL_FEE;
 
   const handleCopyTxn = () => {
     navigator.clipboard.writeText(txnId).catch(() => {});
