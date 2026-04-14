@@ -38,15 +38,15 @@ function LogoIcon() {
 
 const navItems = [
   { label: "Trang chủ", path: "/" },
-  { label: "Dịch vụ", path: "/dich-vu" },
-  { label: "Theo Dõi", path: "/theo-doi" },
+  { label: "Dịch vụ", fixerLabel: "Đơn hàng", path: "/dich-vu" },
+  { label: "Theo Dõi", fixerLabel: "Quá Trình", path: "/theo-doi" },
   { label: "Trợ giúp", path: "/tro-giup" },
   { label: "Về chúng tôi", path: "/ve-chung-toi" },
 ];
 
 export function Navbar() {
   const location = useLocation();
-  const { isLoggedIn, logout } = useAuth();
+  const { isLoggedIn, logout, user } = useAuth();
   const [showNotif, setShowNotif] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notifs, setNotifs] = useState(mockNotifications);
@@ -97,7 +97,7 @@ export function Navbar() {
                   : "text-[#080b0d] hover:text-[#ee3224]"
               }`}
             >
-              {item.label}
+              {user?.role === "fixer" ? item.fixerLabel ?? item.label : item.label}
             </Link>
           ))}
         </div>
@@ -261,19 +261,19 @@ export function Navbar() {
         <div className="border-t border-[rgba(4,38,153,0.08)] bg-white lg:hidden">
           <div className="mx-auto flex w-full max-w-[1360px] flex-col gap-4 px-4 py-5 sm:px-6">
             <div className="flex flex-col gap-3">
-              {navItems.map((item) => (
-                <Link
-                  key={item.path}
-                  to={item.path}
+                  {navItems.map((item) => (
+                    <Link
+                      key={item.path}
+                      to={item.path}
                   className={`rounded-[14px] px-4 py-3 font-['IBM_Plex_Mono',monospace] text-[14px] font-[500] no-underline transition-colors ${
                     location.pathname === item.path
                       ? "bg-[rgba(238,50,36,0.08)] text-[#ee3224]"
                       : "bg-[#f7f7f8] text-[#080b0d]"
                   }`}
-                >
-                  {item.label}
-                </Link>
-              ))}
+                    >
+                      {user?.role === "fixer" ? item.fixerLabel ?? item.label : item.label}
+                    </Link>
+                  ))}
             </div>
 
             {isLoggedIn ? (

@@ -25,6 +25,7 @@ import {
   type ActiveResQRequest,
 } from "./resqStore";
 import { getServiceProgress } from "./tracking/request-progress";
+import { RequestChatPanel } from "./tracking/RequestChatPanel";
 import { useAuth } from "./AuthContext";
 
 const mono = "font-['IBM_Plex_Mono',monospace]";
@@ -48,6 +49,7 @@ export default function TrackingPage() {
 }
 
 function UserTrackingPage() {
+  const { user } = useAuth();
   const { activeRequest, requestHistory, isHydrating } = useResQStore();
 
   if (!activeRequest) {
@@ -367,6 +369,15 @@ function UserTrackingPage() {
                     </span>
                   </Link>
                 </div>
+
+                <div className="mt-5">
+                  <RequestChatPanel
+                    requestId={request.id}
+                    actorId={user?.id}
+                    actorName={user?.name ?? request.requesterName}
+                    actorRole="user"
+                  />
+                </div>
               </div>
             </div>
 
@@ -444,6 +455,7 @@ function UserTrackingPage() {
 }
 
 function FixerTrackingPage() {
+  const { user } = useAuth();
   const {
     activeRequest,
     incomingRequests,
@@ -465,14 +477,14 @@ function FixerTrackingPage() {
         <div className={pageShell}>
           <div className="resq-reveal mb-8 max-w-[760px] sm:mb-10">
             <p className={`${mono} mb-4 text-[12px] font-[500] uppercase tracking-[1.8px] text-[#ee3224] sm:text-[13px]`}>
-              Fixer dashboard
+              Quá trình fixer
             </p>
             <h1 className={`${mono} mb-[10px] text-[36px] font-[700] text-[#080b0d] sm:text-[44px] lg:text-[48px]`}>
-              Xác nhận đơn và theo dõi ca đang xử lý
+              Quản lý quá trình xử lý đơn đang phụ trách
             </h1>
             <p className={`${mono} text-[14px] leading-[24px] text-[#4a5565] sm:text-[15px]`}>
               Luồng fixer mới cho phép bạn nhận request, xác nhận đơn từ khách hàng,
-              rồi tiếp tục cập nhật trạng thái ngay trên website.
+              rồi tiếp tục cập nhật trạng thái và trao đổi ngay trên website.
             </p>
           </div>
 
@@ -543,6 +555,15 @@ function FixerTrackingPage() {
                         Gọi khách hàng
                       </span>
                     </a>
+                  </div>
+
+                  <div className="mt-5">
+                    <RequestChatPanel
+                      requestId={activeRequest.id}
+                      actorId={user?.id}
+                      actorName={user?.name ?? activeRequest.fixerName}
+                      actorRole="fixer"
+                    />
                   </div>
                 </div>
 

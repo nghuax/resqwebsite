@@ -12,7 +12,7 @@ import {
   Bike,
 } from "lucide-react";
 import { useAuth } from "./AuthContext";
-import { useResQStore } from "./resqStore";
+import { useResQStore, type VehicleType } from "./resqStore";
 import { VehicleFormModal } from "./vehicles/VehicleFormModal";
 import { getRoleLabel } from "@/utils/supabase/auth";
 
@@ -36,7 +36,7 @@ const notifications = [
 
 export default function AccountPage() {
   const [activeTab, setActiveTab] = useState("vehicles");
-  const [showAddVehicleModal, setShowAddVehicleModal] = useState(false);
+  const [vehicleModalTypes, setVehicleModalTypes] = useState<VehicleType[] | null>(null);
   const [notifState, setNotifState] = useState(
     Object.fromEntries(notifications.map((notification) => [notification.id, notification.on])),
   );
@@ -190,16 +190,28 @@ export default function AccountPage() {
                         Quản lý danh sách xe để đặt dịch vụ nhanh hơn
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setShowAddVehicleModal(true)}
-                      className="flex h-[38px] items-center justify-center gap-[8px] rounded-[8px] border-0 bg-[#ee3224] px-[16px] cursor-pointer transition-colors hover:bg-[#d42b1e]"
-                    >
-                      <Plus size={16} className="text-white" />
-                      <span className={`${mono} text-[13px] font-[500] text-white`}>
-                        Thêm xe
-                      </span>
-                    </button>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setVehicleModalTypes(["Xe máy"])}
+                        className="flex h-[38px] items-center justify-center gap-[8px] rounded-[8px] border border-black bg-white px-[16px] cursor-pointer transition-colors hover:bg-[#f5f5f5]"
+                      >
+                        <Bike size={16} className="text-[#080b0d]" />
+                        <span className={`${mono} text-[13px] font-[500] text-[#080b0d]`}>
+                          Thêm xe máy
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setVehicleModalTypes(["Ô tô"])}
+                        className="flex h-[38px] items-center justify-center gap-[8px] rounded-[8px] border-0 bg-[#ee3224] px-[16px] cursor-pointer transition-colors hover:bg-[#d42b1e]"
+                      >
+                        <Plus size={16} className="text-white" />
+                        <span className={`${mono} text-[13px] font-[500] text-white`}>
+                          Thêm ô tô
+                        </span>
+                      </button>
+                    </div>
                   </div>
 
                   {vehicles.length > 0 ? (
@@ -377,12 +389,13 @@ export default function AccountPage() {
         </div>
       </div>
 
-      {showAddVehicleModal && (
+      {vehicleModalTypes && (
         <VehicleFormModal
-          onClose={() => setShowAddVehicleModal(false)}
+          allowedTypes={vehicleModalTypes}
+          onClose={() => setVehicleModalTypes(null)}
           onSave={(payload) => {
             addVehicle(payload);
-            setShowAddVehicleModal(false);
+            setVehicleModalTypes(null);
           }}
         />
       )}

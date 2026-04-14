@@ -66,7 +66,7 @@ function ServiceRequestSheet({
   const [selectedLocation, setSelectedLocation] = useState<ServiceLocationValue | null>(null);
   const [locationLabel, setLocationLabel] = useState("");
   const [notes, setNotes] = useState("");
-  const [showVehicleModal, setShowVehicleModal] = useState(false);
+  const [vehicleModalTypes, setVehicleModalTypes] = useState<VehicleType[] | null>(null);
   const [step, setStep] = useState<SheetStep>("select");
   const [submittedRequest, setSubmittedRequest] = useState<ActiveResQRequest | null>(null);
 
@@ -351,7 +351,7 @@ function ServiceRequestSheet({
               </div>
               <button
                 type="button"
-                onClick={() => setShowVehicleModal(true)}
+                onClick={() => setVehicleModalTypes(allowedVehicleTypes)}
                 className="inline-flex items-center gap-2 rounded-full border border-black/8 bg-[#faf8f5] px-3 py-2"
               >
                 <Plus size={14} className="text-[#ee3224]" />
@@ -408,6 +408,25 @@ function ServiceRequestSheet({
                 <p className={`${mono} text-[11px] leading-[19px] text-[#667085]`}>
                   Chưa có phương tiện phù hợp cho dịch vụ này. Thêm xe để tiếp tục.
                 </p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {allowedVehicleTypes.map((vehicleType) => (
+                    <button
+                      key={vehicleType}
+                      type="button"
+                      onClick={() => setVehicleModalTypes([vehicleType])}
+                      className="inline-flex items-center gap-2 rounded-full border border-black/8 bg-white px-3 py-2"
+                    >
+                      {vehicleType === "Xe máy" ? (
+                        <Bike size={14} className="text-[#ee3224]" />
+                      ) : (
+                        <Car size={14} className="text-[#ee3224]" />
+                      )}
+                      <span className={`${mono} text-[10px] uppercase tracking-[0.16em] text-[#080b0d]`}>
+                        Thêm {vehicleType.toLowerCase()}
+                      </span>
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -495,14 +514,14 @@ function ServiceRequestSheet({
           </button>
         </div>
 
-        {showVehicleModal && (
+        {vehicleModalTypes && (
           <VehicleFormModal
-            allowedTypes={allowedVehicleTypes}
-            onClose={() => setShowVehicleModal(false)}
+            allowedTypes={vehicleModalTypes}
+            onClose={() => setVehicleModalTypes(null)}
             onSave={(payload) => {
               const vehicle = addVehicle(payload);
               setSelectedVehicleId(vehicle.id);
-              setShowVehicleModal(false);
+              setVehicleModalTypes(null);
             }}
           />
         )}
@@ -691,10 +710,10 @@ function MobileFixerServicesPage({
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className={`${mono} text-[10px] uppercase tracking-[0.22em] text-white/56`}>
-              Fixer services
+              Fixer orders
             </p>
             <h1 className="mt-3 font-['Syne',sans-serif] text-[34px] leading-[0.92] font-[700] tracking-[-0.05em]">
-              Nhận request mới từ khách hàng
+              Kiểm tra đơn hàng mới từ khách hàng
             </h1>
           </div>
           <Link
@@ -706,7 +725,7 @@ function MobileFixerServicesPage({
         </div>
 
         <p className={`${mono} mt-3 max-w-[300px] text-[12px] leading-[20px] text-white/74`}>
-          Xác nhận request tại đây rồi chuyển sang Theo Dõi để cập nhật trạng thái xử lý cho khách hàng.
+          Xác nhận đơn tại đây rồi chuyển sang Quá Trình để cập nhật trạng thái xử lý cho khách hàng.
         </p>
 
         {activeRequest && (

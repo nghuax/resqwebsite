@@ -33,7 +33,7 @@ export default function MobileProfilePage() {
     requestHistory,
     setDefaultVehicle,
   } = useResQStore();
-  const [showVehicleModal, setShowVehicleModal] = useState(false);
+  const [vehicleModalTypes, setVehicleModalTypes] = useState<VehicleType[] | null>(null);
   const [notifications, setNotifications] = useState(notificationDefaults);
   const roleLabel = user ? getRoleLabel(user.role) : "Khách hàng";
   const handleLogout = async () => {
@@ -143,16 +143,28 @@ export default function MobileProfilePage() {
             </h2>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setShowVehicleModal(true)}
-            className="inline-flex items-center gap-2 rounded-full bg-[#ee3224] px-3 py-2 text-white"
-          >
-            <Plus size={14} />
-            <span className={`${mono} text-[10px] uppercase tracking-[0.18em]`}>
-              Thêm xe
-            </span>
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setVehicleModalTypes(["Xe máy"])}
+              className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-2 text-[#080b0d]"
+            >
+              <Bike size={14} />
+              <span className={`${mono} text-[10px] uppercase tracking-[0.18em]`}>
+                Xe máy
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setVehicleModalTypes(["Ô tô"])}
+              className="inline-flex items-center gap-2 rounded-full bg-[#ee3224] px-3 py-2 text-white"
+            >
+              <Plus size={14} />
+              <span className={`${mono} text-[10px] uppercase tracking-[0.18em]`}>
+                Ô tô
+              </span>
+            </button>
+          </div>
         </div>
 
         <div className="space-y-3">
@@ -291,13 +303,13 @@ export default function MobileProfilePage() {
         </Link>
       </section>
 
-      {showVehicleModal && (
+      {vehicleModalTypes && (
         <VehicleFormModal
-          allowedTypes={["Xe máy", "Ô tô"] satisfies VehicleType[]}
-          onClose={() => setShowVehicleModal(false)}
+          allowedTypes={vehicleModalTypes}
+          onClose={() => setVehicleModalTypes(null)}
           onSave={(payload) => {
             addVehicle(payload);
-            setShowVehicleModal(false);
+            setVehicleModalTypes(null);
           }}
         />
       )}

@@ -56,7 +56,7 @@ function ServiceModal({ service, onClose }: { service: Service; onClose: () => v
   const [notes, setNotes] = useState("");
   const [selectedLocation, setSelectedLocation] = useState<ServiceLocationValue | null>(null);
   const [locationLabel, setLocationLabel] = useState("");
-  const [showAddVehicleModal, setShowAddVehicleModal] = useState(false);
+  const [vehicleModalTypes, setVehicleModalTypes] = useState<VehicleType[] | null>(null);
   const [submittedRequest, setSubmittedRequest] = useState<ActiveResQRequest | null>(null);
   const navigate = useNavigate();
   const allowedVehicleTypes = getAllowedVehicleTypes(service.types);
@@ -104,7 +104,7 @@ function ServiceModal({ service, onClose }: { service: Service; onClose: () => v
   }) => {
     const nextVehicle = addVehicle(payload);
     setSelectedVehicle(nextVehicle.id);
-    setShowAddVehicleModal(false);
+    setVehicleModalTypes(null);
   };
 
   const handleSubmitRequest = () => {
@@ -390,7 +390,7 @@ function ServiceModal({ service, onClose }: { service: Service; onClose: () => v
               </p>
               <button
                 type="button"
-                onClick={() => setShowAddVehicleModal(true)}
+                onClick={() => setVehicleModalTypes(allowedVehicleTypes)}
                 className="inline-flex items-center gap-2 rounded-full border border-[rgba(4,38,153,0.08)] bg-white px-3 py-2 transition-colors hover:border-[#ee3224]"
               >
                 <Plus size={14} className="text-[#ee3224]" />
@@ -467,6 +467,25 @@ function ServiceModal({ service, onClose }: { service: Service; onClose: () => v
                 <p className={`${mono} text-[13px] leading-[22px] text-[#4a5565]`}>
                   Bạn chưa có {allowedVehicleTypes.length === 1 ? allowedVehicleTypes[0].toLowerCase() : "phương tiện phù hợp"} cho dịch vụ này. Thêm xe để tiếp tục tạo yêu cầu.
                 </p>
+                <div className="mt-4 flex flex-wrap gap-3">
+                  {allowedVehicleTypes.map((vehicleType) => (
+                    <button
+                      key={vehicleType}
+                      type="button"
+                      onClick={() => setVehicleModalTypes([vehicleType])}
+                      className="inline-flex items-center gap-2 rounded-full border border-[rgba(4,38,153,0.08)] bg-white px-4 py-2 transition-colors hover:border-[#ee3224]"
+                    >
+                      {vehicleType === "Xe máy" ? (
+                        <Bike size={14} className="text-[#ee3224]" />
+                      ) : (
+                        <Car size={14} className="text-[#ee3224]" />
+                      )}
+                      <span className={`${mono} text-[11px] font-[500] uppercase tracking-[0.14em] text-[#080b0d]`}>
+                        Thêm {vehicleType.toLowerCase()}
+                      </span>
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -546,10 +565,10 @@ function ServiceModal({ service, onClose }: { service: Service; onClose: () => v
         </div>
       </div>
 
-      {showAddVehicleModal && (
+      {vehicleModalTypes && (
         <VehicleFormModal
-          allowedTypes={allowedVehicleTypes}
-          onClose={() => setShowAddVehicleModal(false)}
+          allowedTypes={vehicleModalTypes}
+          onClose={() => setVehicleModalTypes(null)}
           onSave={handleAddVehicle}
         />
       )}
@@ -705,11 +724,11 @@ function FixerServicesPage() {
             </div>
             <div className="max-w-[760px]">
               <h1 className={`${mono} mb-[8px] text-[30px] font-[500] leading-[1.2] text-black sm:text-[34px] lg:text-[32px] lg:tracking-[2.56px]`}>
-                Request chờ fixer xác nhận
+                Đơn hàng chờ fixer xác nhận
               </h1>
               <p className={`${mono} text-[14px] leading-[24px] text-[#4a5565] sm:text-[15px]`}>
                 Đây là mặt điều phối dành cho fixer: xem request mới từ khách hàng,
-                xác nhận đơn và chuyển sang trang Theo Dõi để tiếp tục xử lý.
+                xác nhận đơn và chuyển sang trang Quá Trình để tiếp tục xử lý.
               </p>
             </div>
           </div>
@@ -733,7 +752,7 @@ function FixerServicesPage() {
                   className="inline-flex h-[46px] items-center justify-center rounded-[12px] bg-[#ee3224] px-6 no-underline transition-colors hover:bg-[#d42b1e]"
                 >
                   <span className={`${mono} text-[13px] font-[500] text-white`}>
-                    Mở Theo Dõi
+                    Mở Quá Trình
                   </span>
                 </Link>
               </div>
@@ -837,7 +856,7 @@ function FixerServicesPage() {
                         className="inline-flex h-[46px] items-center justify-center rounded-[12px] border border-black px-6 no-underline transition-colors hover:bg-[#f5f5f5]"
                       >
                         <span className={`${mono} text-[13px] font-[500] text-[#080b0d]`}>
-                          Mở Theo Dõi
+                          Mở Quá Trình
                         </span>
                       </Link>
                     </div>

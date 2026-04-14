@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { TrackingLiveMap } from "../tracking/TrackingLiveMap";
 import { getServiceProgress } from "../tracking/request-progress";
+import { RequestChatPanel } from "../tracking/RequestChatPanel";
 import {
   advanceActiveRequestStatus,
   confirmIncomingRequest,
@@ -45,6 +46,7 @@ export default function MobileActivityPage() {
 }
 
 function MobileUserActivityPage() {
+  const { user } = useAuth();
   const { activeRequest, requestHistory, isHydrating } = useResQStore();
   const liveRequest = activeRequest;
   const liveProgress = getServiceProgress(liveRequest?.status ?? "Chờ fixer xác nhận");
@@ -206,6 +208,14 @@ function MobileUserActivityPage() {
               </p>
             </Link>
           </section>
+
+          <RequestChatPanel
+            requestId={liveRequest.id}
+            actorId={user?.id}
+            actorName={user?.name ?? liveRequest.requesterName}
+            actorRole="user"
+            compact
+          />
         </>
       ) : (
         <section className="rounded-[26px] border border-dashed border-black/10 bg-white/88 p-5 text-center shadow-[0_18px_40px_rgba(8,11,13,0.06)]">
@@ -324,6 +334,7 @@ function MobileUserActivityPage() {
 }
 
 function MobileFixerActivityPage() {
+  const { user } = useAuth();
   const { activeRequest, incomingRequests, requestHistory } = useResQStore();
 
   const nextActionLabel =
@@ -438,6 +449,14 @@ function MobileFixerActivityPage() {
               </a>
             </div>
           </section>
+
+          <RequestChatPanel
+            requestId={activeRequest.id}
+            actorId={user?.id}
+            actorName={user?.name ?? activeRequest.fixerName}
+            actorRole="fixer"
+            compact
+          />
 
           {incomingRequests.length > 0 && (
             <section className="rounded-[26px] bg-white/92 p-4 shadow-[0_18px_40px_rgba(8,11,13,0.06)]">

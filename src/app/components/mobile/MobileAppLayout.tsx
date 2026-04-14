@@ -8,17 +8,19 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { ReactNode } from "react";
+import { useAuth } from "../AuthContext";
 
 const mono = "font-['IBM_Plex_Mono',monospace]";
 
 const navItems: Array<{
   label: string;
+  fixerLabel?: string;
   path: string;
   icon: LucideIcon;
 }> = [
   { label: "Home", path: "/", icon: House },
-  { label: "Services", path: "/dich-vu", icon: Wrench },
-  { label: "Activity", path: "/theo-doi", icon: ShieldPlus },
+  { label: "Services", fixerLabel: "Đơn hàng", path: "/dich-vu", icon: Wrench },
+  { label: "Activity", fixerLabel: "Quá Trình", path: "/theo-doi", icon: ShieldPlus },
   { label: "Help", path: "/tro-giup", icon: CircleHelp },
   { label: "Profile", path: "/tai-khoan", icon: UserRound },
 ];
@@ -33,6 +35,7 @@ function isActivePath(currentPath: string, itemPath: string) {
 
 export default function MobileAppLayout({ children }: { children: ReactNode }) {
   const location = useLocation();
+  const { user } = useAuth();
   const hideBottomNav = location.pathname === "/thanh-toan";
 
   return (
@@ -59,7 +62,7 @@ export default function MobileAppLayout({ children }: { children: ReactNode }) {
                   >
                     <Icon size={18} />
                     <span className={`${mono} text-[9px] uppercase tracking-[0.18em]`}>
-                      {item.label}
+                      {user?.role === "fixer" ? item.fixerLabel ?? item.label : item.label}
                     </span>
                   </Link>
                 );
