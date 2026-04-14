@@ -8,25 +8,17 @@ import {
   LoaderCircle,
   Navigation,
 } from "lucide-react";
+import type { ResQAuthRole } from "@/utils/supabase/auth";
+import { useResolvedRequestLocations } from "./requestLocations";
 import {
-  buildCumulativeDistances,
   createVehicleOrigin,
   fetchRouteData,
-  getBearingAlongRoute,
-  getPointAlongRoute,
-  getSegmentIndexAtDistance,
-  getSimulationSpeedMetersPerSecond,
   getTrackingStatus,
-  getUserLocation,
+  HO_CHI_MINH_CITY_FALLBACK,
+  measureDistanceMeters,
   type GeoPoint,
-  type RouteData,
 } from "./tracking-utils";
 
-type RuntimeRoute = RouteData & {
-  cumulativeDistances: number[];
-};
-
-const MAP_TICK_MS = 120;
 const DEFAULT_ZOOM = 14;
 const MAP_TOP_PADDING = 72;
 const MAP_EDGE_PADDING = 72;
@@ -34,33 +26,52 @@ const MAP_EDGE_PADDING = 72;
 const mono = "font-['IBM_Plex_Mono',monospace]";
 
 export function TrackingLiveMap({
+  requestId,
+  actorId,
+  actorRole,
   destinationPoint,
+  destinationAddress,
 }: {
+  requestId: string;
+  actorId?: string | null;
+  actorRole: ResQAuthRole;
   destinationPoint?: GeoPoint | null;
+  destinationAddress?: string | null;
 }) {
-  const destinationLat = destinationPoint?.lat ?? null;
-  const destinationLng = destinationPoint?.lng ?? null;
   const mapElementRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<LeafletMap | null>(null);
   const userMarkerRef = useRef<LeafletMarker | null>(null);
   const vehicleMarkerRef = useRef<LeafletMarker | null>(null);
   const routeShadowRef = useRef<LeafletPolyline | null>(null);
   const activeRouteRef = useRef<LeafletPolyline | null>(null);
-  const travelledRouteRef = useRef<LeafletPolyline | null>(null);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
-  const movementIntervalRef = useRef<number | null>(null);
-  const travelledDistanceRef = useRef(0);
-  const simulationSpeedRef = useRef(0);
-  const routeRef = useRef<RuntimeRoute | null>(null);
-  const followVehicleRef = useRef(true);
+  const hasFitBoundsRef = useRef(false);
   const lastFollowPanAtRef = useRef(0);
 
   const [hasMounted, setHasMounted] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isRouting, setIsRouting] = useState(true);
   const [followVehicle, setFollowVehicle] = useState(true);
-  const [userPosition, setUserPosition] = useState<GeoPoint | null>(null);
-  const [vehiclePosition, setVehiclePosition] = useState<GeoPoint | null>(null);
   const [remainingDistanceMeters, setRemainingDistanceMeters] = useState(0);
+
+  const { locations, isLoading: isLoadingLocations } = useResolvedRequestLocations({
+    requestId,
+    actorId,
+    actorRole,
+    fallbackUserPoint: destinationPoint,
+    fallbackUserAddress: destinationAddress,
+  });
+
+  const userPosition = useMemo(() => {
+    return (
+      locations.user?.point ??
+      destinationPoint ??
+      HO_CHI_MINH_CITY_FALLBACK
+    );
+  }, [destinationPoint, locations.user?.point]);
+
+  const fixerPosition = useMemo(() => {
+    return locations.fixer?.point ?? createVehicleOrigin(userPosition);
+  }, [locations.fixer?.point, userPosition]);
 
   const trackingStatus = useMemo(
     () => getTrackingStatus(remainingDistanceMeters),
@@ -72,45 +83,15 @@ export function TrackingLiveMap({
   }, []);
 
   useEffect(() => {
-    followVehicleRef.current = followVehicle;
-  }, [followVehicle]);
+    hasFitBoundsRef.current = false;
+  }, [requestId]);
 
   useEffect(() => {
     if (!hasMounted || !mapElementRef.current) {
       return;
     }
 
-    setIsLoading(true);
-    setFollowVehicle(true);
-    setUserPosition(null);
-    setVehiclePosition(null);
-    setRemainingDistanceMeters(0);
-    followVehicleRef.current = true;
-    lastFollowPanAtRef.current = 0;
-
     let cancelled = false;
-    const routeAbortController = new AbortController();
-
-    const teardownMovement = () => {
-      if (movementIntervalRef.current !== null) {
-        window.clearInterval(movementIntervalRef.current);
-        movementIntervalRef.current = null;
-      }
-    };
-
-    const teardownLayers = () => {
-      routeShadowRef.current?.remove();
-      activeRouteRef.current?.remove();
-      travelledRouteRef.current?.remove();
-      userMarkerRef.current?.remove();
-      vehicleMarkerRef.current?.remove();
-
-      routeShadowRef.current = null;
-      activeRouteRef.current = null;
-      travelledRouteRef.current = null;
-      userMarkerRef.current = null;
-      vehicleMarkerRef.current = null;
-    };
 
     const initialize = async () => {
       const L = await import("leaflet");
@@ -123,7 +104,7 @@ export function TrackingLiveMap({
         zoomControl: false,
         attributionControl: true,
         preferCanvas: true,
-      }).setView([10.776889, 106.700806], DEFAULT_ZOOM);
+      }).setView([userPosition.lat, userPosition.lng], DEFAULT_ZOOM);
 
       mapRef.current = map;
 
@@ -140,75 +121,13 @@ export function TrackingLiveMap({
         });
         resizeObserverRef.current.observe(mapElementRef.current);
       }
+
       window.requestAnimationFrame(() => {
         map.invalidateSize();
         window.setTimeout(() => map.invalidateSize(), 180);
       });
 
-      const userPoint =
-        destinationLat !== null && destinationLng !== null
-          ? { lat: destinationLat, lng: destinationLng }
-          : (await getUserLocation()).point;
-
-      if (cancelled) {
-        return;
-      }
-
-      setUserPosition(userPoint);
-
-      const vehicleOrigin = createVehicleOrigin(userPoint);
-      const route = await fetchRouteData(
-        vehicleOrigin,
-        userPoint,
-        routeAbortController.signal,
-      );
-
-      if (cancelled) {
-        return;
-      }
-
-      const runtimeRoute: RuntimeRoute = {
-        ...route,
-        cumulativeDistances: buildCumulativeDistances(route.points),
-      };
-
-      routeRef.current = runtimeRoute;
-      travelledDistanceRef.current = 0;
-      simulationSpeedRef.current = getSimulationSpeedMetersPerSecond(
-        runtimeRoute.totalDistanceMeters,
-      );
-
-      setVehiclePosition(vehicleOrigin);
-      setRemainingDistanceMeters(runtimeRoute.totalDistanceMeters);
-
-      const routeLatLngs = runtimeRoute.points.map(toLeafletPoint);
-      const bounds = L.latLngBounds(routeLatLngs);
-
-      routeShadowRef.current = L.polyline(routeLatLngs, {
-        color: "#f7d6d2",
-        weight: 12,
-        opacity: 0.9,
-        lineCap: "round",
-        lineJoin: "round",
-      }).addTo(map);
-
-      activeRouteRef.current = L.polyline(routeLatLngs, {
-        color: "#ee3224",
-        weight: 4,
-        opacity: 0.92,
-        lineCap: "round",
-        lineJoin: "round",
-      }).addTo(map);
-
-      travelledRouteRef.current = L.polyline([toLeafletPoint(vehicleOrigin)], {
-        color: "#080b0d",
-        weight: 5,
-        opacity: 0.72,
-        lineCap: "round",
-        lineJoin: "round",
-      }).addTo(map);
-
-      userMarkerRef.current = L.marker(toLeafletPoint(userPoint), {
+      userMarkerRef.current = L.marker(toLeafletPoint(userPosition), {
         icon: L.divIcon({
           className: "",
           iconSize: [28, 28],
@@ -222,7 +141,7 @@ export function TrackingLiveMap({
         }),
       }).addTo(map);
 
-      vehicleMarkerRef.current = L.marker(toLeafletPoint(vehicleOrigin), {
+      vehicleMarkerRef.current = L.marker(toLeafletPoint(fixerPosition), {
         icon: L.divIcon({
           className: "",
           iconSize: [68, 44],
@@ -243,111 +162,118 @@ export function TrackingLiveMap({
         }),
       }).addTo(map);
 
-      map.fitBounds(bounds, {
-        paddingTopLeft: [MAP_EDGE_PADDING, MAP_TOP_PADDING],
-        paddingBottomRight: [MAP_EDGE_PADDING, MAP_EDGE_PADDING],
-        maxZoom: 15,
-      });
+      routeShadowRef.current = L.polyline([toLeafletPoint(fixerPosition), toLeafletPoint(userPosition)], {
+        color: "#f7d6d2",
+        weight: 12,
+        opacity: 0.9,
+        lineCap: "round",
+        lineJoin: "round",
+      }).addTo(map);
 
-      setIsLoading(false);
+      activeRouteRef.current = L.polyline([toLeafletPoint(fixerPosition), toLeafletPoint(userPosition)], {
+        color: "#ee3224",
+        weight: 4,
+        opacity: 0.92,
+        lineCap: "round",
+        lineJoin: "round",
+      }).addTo(map);
+    };
 
-      movementIntervalRef.current = window.setInterval(() => {
-        const currentRoute = routeRef.current;
-        const currentMap = mapRef.current;
+    void initialize();
 
-        if (!currentRoute || !currentMap) {
+    return () => {
+      cancelled = true;
+      resizeObserverRef.current?.disconnect();
+      resizeObserverRef.current = null;
+      routeShadowRef.current?.remove();
+      activeRouteRef.current?.remove();
+      userMarkerRef.current?.remove();
+      vehicleMarkerRef.current?.remove();
+      routeShadowRef.current = null;
+      activeRouteRef.current = null;
+      userMarkerRef.current = null;
+      vehicleMarkerRef.current = null;
+      mapRef.current?.remove();
+      mapRef.current = null;
+      hasFitBoundsRef.current = false;
+    };
+  }, [hasMounted]);
+
+  useEffect(() => {
+    if (!hasMounted || !mapRef.current) {
+      return;
+    }
+
+    const currentMap = mapRef.current;
+    const currentUser = userPosition;
+    const currentFixer = fixerPosition;
+    let cancelled = false;
+    const routeAbortController = new AbortController();
+
+    setIsRouting(true);
+    userMarkerRef.current?.setLatLng(toLeafletPoint(currentUser));
+    vehicleMarkerRef.current?.setLatLng(toLeafletPoint(currentFixer));
+
+    void fetchRouteData(currentFixer, currentUser, routeAbortController.signal)
+      .then((route) => {
+        if (cancelled) {
           return;
         }
 
-        const nextTravelledDistance = Math.min(
-          travelledDistanceRef.current +
-            simulationSpeedRef.current * (MAP_TICK_MS / 1000),
-          currentRoute.totalDistanceMeters,
-        );
+        const routeLatLngs = route.points.map(toLeafletPoint);
+        const bounds = routeLatLngs.length > 1
+          ? [toLeafletPoint(currentFixer), ...routeLatLngs, toLeafletPoint(currentUser)]
+          : [toLeafletPoint(currentFixer), toLeafletPoint(currentUser)];
 
-        travelledDistanceRef.current = nextTravelledDistance;
+        routeShadowRef.current?.setLatLngs(routeLatLngs);
+        activeRouteRef.current?.setLatLngs(routeLatLngs);
+        setRemainingDistanceMeters(route.totalDistanceMeters);
 
-        const nextVehiclePoint = getPointAlongRoute(
-          currentRoute.points,
-          currentRoute.cumulativeDistances,
-          nextTravelledDistance,
-        );
-        const remainingDistance = Math.max(
-          currentRoute.totalDistanceMeters - nextTravelledDistance,
-          0,
-        );
-        const segmentIndex = getSegmentIndexAtDistance(
-          currentRoute.cumulativeDistances,
-          nextTravelledDistance,
-        );
-        const heading = getBearingAlongRoute(
-          currentRoute.points,
-          currentRoute.cumulativeDistances,
-          nextTravelledDistance,
-        );
-
-        vehicleMarkerRef.current?.setLatLng(toLeafletPoint(nextVehiclePoint));
-        vehicleMarkerRef.current
-          ?.getElement()
-          ?.style.setProperty("--vehicle-bearing", `${heading}deg`);
-
-        const travelledPoints = [
-          ...currentRoute.points.slice(0, segmentIndex + 1),
-          nextVehiclePoint,
-        ].map(toLeafletPoint);
-        const remainingPoints = [
-          nextVehiclePoint,
-          ...currentRoute.points.slice(segmentIndex + 1),
-        ].map(toLeafletPoint);
-
-        travelledRouteRef.current?.setLatLngs(travelledPoints);
-        activeRouteRef.current?.setLatLngs(remainingPoints);
-
-        if (
-          followVehicleRef.current &&
+        if (!hasFitBoundsRef.current) {
+          currentMap.flyToBounds(bounds, {
+            paddingTopLeft: [MAP_EDGE_PADDING, MAP_TOP_PADDING],
+            paddingBottomRight: [MAP_EDGE_PADDING, MAP_EDGE_PADDING],
+            maxZoom: 15,
+            duration: 1.1,
+          });
+          hasFitBoundsRef.current = true;
+        } else if (
+          followVehicle &&
           Date.now() - lastFollowPanAtRef.current > 850
         ) {
           lastFollowPanAtRef.current = Date.now();
-          currentMap.panTo(toLeafletPoint(nextVehiclePoint), {
+          currentMap.panTo(toLeafletPoint(currentFixer), {
             animate: true,
             duration: 0.9,
           });
         }
-
-        setVehiclePosition(nextVehiclePoint);
-        setRemainingDistanceMeters(remainingDistance);
-
-        if (remainingDistance <= 0) {
-          teardownMovement();
+      })
+      .catch(() => {
+        if (!cancelled) {
+          const directDistance = measureDistanceMeters(currentFixer, currentUser);
+          const straightRoute = [toLeafletPoint(currentFixer), toLeafletPoint(currentUser)];
+          routeShadowRef.current?.setLatLngs(straightRoute);
+          activeRouteRef.current?.setLatLngs(straightRoute);
+          setRemainingDistanceMeters(directDistance);
         }
-      }, MAP_TICK_MS);
-    };
-
-    initialize().catch(() => {
-      if (!cancelled) {
-        setIsLoading(false);
-      }
-    });
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setIsRouting(false);
+        }
+      });
 
     return () => {
       cancelled = true;
       routeAbortController.abort();
-      teardownMovement();
-      resizeObserverRef.current?.disconnect();
-      resizeObserverRef.current = null;
-      teardownLayers();
-      mapRef.current?.remove();
-      mapRef.current = null;
-      routeRef.current = null;
     };
-  }, [destinationLat, destinationLng, hasMounted]);
+  }, [fixerPosition, followVehicle, hasMounted, userPosition]);
 
   const handleLocateMe = () => {
-    if (!mapRef.current || !userPosition) {
+    if (!mapRef.current) {
       return;
     }
 
-    setFollowVehicle(false);
     mapRef.current.flyTo(toLeafletPoint(userPosition), 16, {
       animate: true,
       duration: 1.1,
@@ -355,18 +281,13 @@ export function TrackingLiveMap({
   };
 
   const handleRecenter = () => {
-    const currentMap = mapRef.current;
-    const currentUser = userPosition;
-    const currentVehicle = vehiclePosition;
-
-    if (!currentMap || !currentUser || !currentVehicle) {
+    if (!mapRef.current) {
       return;
     }
 
     setFollowVehicle(false);
-
-    currentMap.flyToBounds(
-      [toLeafletPoint(currentUser), toLeafletPoint(currentVehicle)],
+    mapRef.current.flyToBounds(
+      [toLeafletPoint(userPosition), toLeafletPoint(fixerPosition)],
       {
         paddingTopLeft: [MAP_EDGE_PADDING, MAP_TOP_PADDING],
         paddingBottomRight: [MAP_EDGE_PADDING, MAP_EDGE_PADDING],
@@ -380,8 +301,8 @@ export function TrackingLiveMap({
     setFollowVehicle((currentValue) => {
       const nextValue = !currentValue;
 
-      if (nextValue && mapRef.current && vehiclePosition) {
-        mapRef.current.flyTo(toLeafletPoint(vehiclePosition), 15, {
+      if (nextValue && mapRef.current) {
+        mapRef.current.flyTo(toLeafletPoint(fixerPosition), 15, {
           animate: true,
           duration: 1.1,
         });
@@ -422,22 +343,22 @@ export function TrackingLiveMap({
         <MapActionButton
           active={followVehicle}
           icon={<Navigation size={16} />}
-          label="Theo xe"
+          label="Theo fixer"
           onClick={handleToggleFollow}
         />
       </div>
 
-      {isLoading && (
+      {(isLoadingLocations || isRouting) && (
         <div className="absolute inset-0 flex items-center justify-center bg-white/65 backdrop-blur-[4px]">
           <div className="rounded-[20px] border border-[rgba(4,38,153,0.08)] bg-white px-5 py-4 shadow-[0_18px_50px_rgba(8,11,13,0.12)]">
             <div className="flex items-center gap-3">
               <LoaderCircle className="animate-spin text-[#ee3224]" size={18} />
               <div>
                 <p className={`${mono} text-[11px] uppercase tracking-[0.22em] text-[#99a1af]`}>
-                  Đang chuẩn bị bản đồ
+                  Đang đồng bộ theo thời gian thực
                 </p>
                 <p className={`${mono} text-[15px] font-[500] text-[#080b0d]`}>
-                  Đang xác định vị trí và tuyến đường...
+                  Đang lấy vị trí user và fixer...
                 </p>
               </div>
             </div>

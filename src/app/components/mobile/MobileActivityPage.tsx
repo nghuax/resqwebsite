@@ -102,7 +102,13 @@ function MobileUserActivityPage() {
             </div>
 
             <div className="mt-4 overflow-hidden rounded-[22px]">
-              <TrackingLiveMap destinationPoint={liveRequest.locationPoint} />
+              <TrackingLiveMap
+                requestId={liveRequest.id}
+                actorId={user?.id}
+                actorRole="user"
+                destinationPoint={liveRequest.locationPoint}
+                destinationAddress={liveRequest.locationAddress}
+              />
             </div>
 
             <div className="mt-4 flex items-start gap-3 rounded-[18px] bg-white px-3 py-3">
@@ -397,7 +403,13 @@ function MobileFixerActivityPage() {
             </div>
 
             <div className="mt-4 overflow-hidden rounded-[22px]">
-              <TrackingLiveMap destinationPoint={activeRequest.locationPoint} />
+              <TrackingLiveMap
+                requestId={activeRequest.id}
+                actorId={user?.id}
+                actorRole="fixer"
+                destinationPoint={activeRequest.locationPoint}
+                destinationAddress={activeRequest.locationAddress}
+              />
             </div>
 
             <div className="mt-4 space-y-3">

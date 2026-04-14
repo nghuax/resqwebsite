@@ -1,7 +1,9 @@
 import { useSyncExternalStore } from "react";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 import type { ResQAuthRole, ResQAuthUser } from "@/utils/supabase/auth";
 import { createClient } from "@/utils/supabase/client";
 import { HO_CHI_MINH_CITY_FALLBACK, type GeoPoint } from "./tracking/tracking-utils";
+import { seedRequestLocation } from "./tracking/requestLocations";
 
 export type VehicleType = "Xe máy" | "Ô tô";
 export type ResQRequestStatus =
@@ -156,6 +158,8 @@ let currentSnapshot: ResQStoreSnapshot = {
   lastSyncedAt: currentLastSyncedAt,
 };
 const listeners = new Set<() => void>();
+let requestsRealtimeChannel: RealtimeChannel | null = null;
+let vehiclesRealtimeChannel: RealtimeChannel | null = null;
 
 hydrateStore();
 
@@ -518,6 +522,59 @@ async function persistRequestSnapshot(request: ActiveResQRequest) {
   }
 }
 
+function teardownRealtimeChannels() {
+  const supabase = createClient();
+
+  if (requestsRealtimeChannel) {
+    void supabase.removeChannel(requestsRealtimeChannel);
+    requestsRealtimeChannel = null;
+  }
+
+  if (vehiclesRealtimeChannel) {
+    void supabase.removeChannel(vehiclesRealtimeChannel);
+    vehiclesRealtimeChannel = null;
+  }
+}
+
+function syncRealtimeChannels(actor: StoreActor | null) {
+  teardownRealtimeChannels();
+
+  if (!actor?.id) {
+    return;
+  }
+
+  const supabase = createClient();
+  const refreshSnapshot = () => {
+    void refreshResQStore(actor);
+  };
+
+  requestsRealtimeChannel = supabase
+    .channel(`resq-store-requests:${actor.id}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: REQUESTS_TABLE,
+      },
+      refreshSnapshot,
+    )
+    .subscribe();
+
+  vehiclesRealtimeChannel = supabase
+    .channel(`resq-store-vehicles:${actor.id}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: VEHICLES_TABLE,
+      },
+      refreshSnapshot,
+    )
+    .subscribe();
+}
+
 function getNextActiveStatus(status: ResQRequestStatus): ResQRequestStatus {
   switch (status) {
     case "Fixer đã xác nhận":
@@ -571,6 +628,14 @@ export function setActiveRequest(request: ActiveResQRequest) {
   currentRequestHistory = upsertHistoryEntry(toHistoryItem(currentActiveRequest));
   emitChange();
   void persistRequestSnapshot(currentActiveRequest);
+  seedRequestLocation({
+    requestId: currentActiveRequest.id,
+    actorId: currentActiveRequest.requesterId,
+    actorRole: "user",
+    point: currentActiveRequest.locationPoint,
+    source: currentActiveRequest.locationSource,
+    address: currentActiveRequest.locationAddress,
+  });
 }
 
 export function clearActiveRequest() {
@@ -860,11 +925,13 @@ export function setResQStoreScope(user: StoreActor | null) {
   const nextScopeKey = user ? `user:${user.id}` : "guest";
 
   if (nextScopeKey === currentScopeKey) {
+    syncRealtimeChannels(user);
     return;
   }
 
   currentScopeKey = nextScopeKey;
   hydrateStore();
+  syncRealtimeChannels(user);
   notifyListeners();
 }
 

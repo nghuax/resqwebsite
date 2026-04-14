@@ -273,7 +273,13 @@ function UserTrackingPage() {
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
             <div className="min-w-0">
               <div className="resq-reveal resq-reveal--delay-2">
-                <TrackingLiveMap destinationPoint={request.locationPoint} />
+                <TrackingLiveMap
+                  requestId={request.id}
+                  actorId={user?.id}
+                  actorRole="user"
+                  destinationPoint={request.locationPoint}
+                  destinationAddress={request.locationAddress}
+                />
               </div>
 
               <div className="resq-reveal resq-reveal--delay-2 mt-5 rounded-[20px] border border-[rgba(4,38,153,0.08)] bg-white p-5 shadow-[0_18px_50px_rgba(8,11,13,0.04)] sm:p-6">
@@ -530,7 +536,13 @@ function FixerTrackingPage() {
                   </div>
 
                   <div className="mt-5 overflow-hidden rounded-[20px]">
-                    <TrackingLiveMap destinationPoint={activeRequest.locationPoint} />
+                    <TrackingLiveMap
+                      requestId={activeRequest.id}
+                      actorId={user?.id}
+                      actorRole="fixer"
+                      destinationPoint={activeRequest.locationPoint}
+                      destinationAddress={activeRequest.locationAddress}
+                    />
                   </div>
 
                   <div className="mt-5 flex flex-col gap-3 sm:flex-row">

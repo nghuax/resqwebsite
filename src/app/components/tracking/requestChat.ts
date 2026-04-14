@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 import type { ResQAuthRole } from "@/utils/supabase/auth";
 import { createClient } from "@/utils/supabase/client";
 
@@ -197,6 +198,23 @@ export function useRequestChat(requestId: string | null) {
       return;
     }
 
+    const supabase = createClient();
+    let activeChannel: RealtimeChannel | null = supabase
+      .channel(`resq-request-chat:${requestId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: REQUEST_CHAT_TABLE,
+          filter: `request_id=eq.${requestId}`,
+        },
+        () => {
+          void reload();
+        },
+      )
+      .subscribe();
+
     const intervalId = window.setInterval(() => {
       void reload();
     }, REQUEST_CHAT_REFRESH_MS);
@@ -223,6 +241,10 @@ export function useRequestChat(requestId: string | null) {
 
     return () => {
       window.clearInterval(intervalId);
+      if (activeChannel) {
+        void supabase.removeChannel(activeChannel);
+        activeChannel = null;
+      }
       window.removeEventListener("storage", handleStorageChange);
       window.removeEventListener(REQUEST_CHAT_EVENT, handleSameTabChange);
     };
