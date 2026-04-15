@@ -171,6 +171,28 @@
     font-size: var(--text-base);
     font-weight: var(--font-weight-medium);
     line-height: 1.5;
+    transition-duration: 180ms;
+    transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  button[class*="transition-colors"],
+  a[class*="rounded-"][class*="transition-colors"],
+  a[class*="rounded-"][class*="transition-all"],
+  [data-slot="button"] {
+    transition-property:
+      color,
+      background-color,
+      border-color,
+      outline-color,
+      text-decoration-color,
+      fill,
+      stroke,
+      opacity,
+      box-shadow,
+      transform,
+      filter;
+    transition-duration: 180ms;
+    transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   input {
@@ -236,6 +258,31 @@
 
   .resq-map-float {
     animation: resqFloat 7.4s ease-in-out infinite;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    button:not(:disabled):not([aria-disabled="true"]),
+    a[class*="rounded-"][class*="transition-colors"]:not([aria-disabled="true"]),
+    a[class*="rounded-"][class*="transition-all"]:not([aria-disabled="true"]),
+    [data-slot="button"]:not(:disabled):not([aria-disabled="true"]) {
+      transform: translateZ(0);
+    }
+
+    button:not(:disabled):not([aria-disabled="true"]):hover,
+    a[class*="rounded-"][class*="transition-colors"]:not([aria-disabled="true"]):hover,
+    a[class*="rounded-"][class*="transition-all"]:not([aria-disabled="true"]):hover,
+    [data-slot="button"]:not(:disabled):not([aria-disabled="true"]):hover {
+      transform: translate3d(0, -2px, 0);
+      filter: saturate(1.02);
+    }
+
+    button:not(:disabled):not([aria-disabled="true"]):active,
+    a[class*="rounded-"][class*="transition-colors"]:not([aria-disabled="true"]):active,
+    a[class*="rounded-"][class*="transition-all"]:not([aria-disabled="true"]):active,
+    [data-slot="button"]:not(:disabled):not([aria-disabled="true"]):active {
+      transform: translate3d(0, 0, 0) scale(0.985);
+      filter: none;
+    }
   }
 
   .resq-modal-backdrop {
