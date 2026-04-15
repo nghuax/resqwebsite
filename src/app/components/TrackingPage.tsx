@@ -18,6 +18,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { TrackingLiveMap } from "./tracking/TrackingLiveMap";
+import { useLiveRequestLocationSync } from "./tracking/requestLocations";
 import {
   advanceActiveRequestStatus,
   confirmIncomingRequest,
@@ -50,7 +51,20 @@ export default function TrackingPage() {
 
 function UserTrackingPage() {
   const { user } = useAuth();
-  const { activeRequest, requestHistory, isHydrating } = useResQStore();
+  const {
+    activeRequest,
+    requestHistory,
+    isHydrating,
+    cancelActiveRequest,
+  } = useResQStore();
+
+  useLiveRequestLocationSync({
+    requestId: activeRequest?.id ?? null,
+    actorId: user?.id,
+    actorRole: user?.role === "fixer" ? "fixer" : "user",
+    fallbackUserPoint: activeRequest?.locationPoint,
+    fallbackUserAddress: activeRequest?.locationAddress,
+  });
 
   if (!activeRequest) {
     return (
@@ -173,8 +187,9 @@ function UserTrackingPage() {
   ];
   const VehicleIcon = request.vehicleType === "Xe máy" ? Bike : Car;
   const serviceProgress = getServiceProgress(request.status);
+  const isWaitingForFixerConfirmation = request.status === "Chờ fixer xác nhận";
   const heroLabel =
-    request.status === "Chờ fixer xác nhận"
+    isWaitingForFixerConfirmation
       ? "Yêu cầu đang chờ fixer xác nhận"
       : request.status === "Fixer đã xác nhận"
         ? "Fixer đã nhận đơn của bạn"
@@ -272,15 +287,63 @@ function UserTrackingPage() {
 
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
             <div className="min-w-0">
-              <div className="resq-reveal resq-reveal--delay-2">
-                <TrackingLiveMap
-                  requestId={request.id}
-                  actorId={user?.id}
-                  actorRole="user"
-                  destinationPoint={request.locationPoint}
-                  destinationAddress={request.locationAddress}
-                />
-              </div>
+              {isWaitingForFixerConfirmation ? (
+                <div className="resq-reveal resq-reveal--delay-2 rounded-[20px] border border-[rgba(4,38,153,0.08)] bg-[linear-gradient(180deg,#fff7f5_0%,#ffffff_100%)] p-5 shadow-[0_18px_50px_rgba(8,11,13,0.04)] sm:p-6">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
+                      <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-[rgba(238,50,36,0.1)] px-3 py-1.5">
+                        <Clock3 size={14} className="text-[#ee3224]" />
+                        <span className={`${mono} text-[11px] uppercase tracking-[0.16em] text-[#ee3224]`}>
+                          Chờ fixer xác nhận
+                        </span>
+                      </div>
+                      <h2 className={`${mono} text-[24px] font-[700] leading-[1.2] text-[#080b0d] sm:text-[28px]`}>
+                        Bản đồ sẽ mở ngay khi fixer nhận đơn
+                      </h2>
+                      <p className={`${mono} mt-3 max-w-[620px] text-[13px] leading-[22px] text-[#4a5565] sm:text-[14px] sm:leading-[24px]`}>
+                        ResQ đã lưu vị trí của bạn và đang gửi yêu cầu tới fixer phù hợp.
+                        Ngay khi có người nhận đơn, trang này sẽ chuyển sang bản đồ trực tiếp để bạn theo dõi xe cứu hộ.
+                      </p>
+                    </div>
+
+                    <div className="inline-flex w-fit shrink-0 items-center gap-2 rounded-full bg-white px-4 py-2.5 shadow-[0_12px_30px_rgba(8,11,13,0.06)]">
+                      <MapPin size={16} className="text-[#ee3224]" />
+                      <span className={`${mono} text-[11px] uppercase tracking-[0.18em] text-[#080b0d]`}>
+                        Vị trí đã đồng bộ
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-[16px] border border-[rgba(4,38,153,0.08)] bg-white px-4 py-4">
+                      <p className={`${mono} text-[11px] uppercase tracking-[0.16em] text-[#99a1af]`}>
+                        Điểm hẹn hiện tại
+                      </p>
+                      <p className={`${mono} mt-2 text-[14px] leading-[23px] text-[#080b0d]`}>
+                        {request.locationAddress}
+                      </p>
+                    </div>
+                    <div className="rounded-[16px] border border-[rgba(4,38,153,0.08)] bg-white px-4 py-4">
+                      <p className={`${mono} text-[11px] uppercase tracking-[0.16em] text-[#99a1af]`}>
+                        Điều phối
+                      </p>
+                      <p className={`${mono} mt-2 text-[14px] leading-[23px] text-[#080b0d]`}>
+                        Hệ thống đang tìm fixer gần bạn nhất cho dịch vụ {request.serviceTitle.toLowerCase()}.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="resq-reveal resq-reveal--delay-2">
+                  <TrackingLiveMap
+                    requestId={request.id}
+                    actorId={user?.id}
+                    actorRole="user"
+                    destinationPoint={request.locationPoint}
+                    destinationAddress={request.locationAddress}
+                  />
+                </div>
+              )}
 
               <div className="resq-reveal resq-reveal--delay-2 mt-5 rounded-[20px] border border-[rgba(4,38,153,0.08)] bg-white p-5 shadow-[0_18px_50px_rgba(8,11,13,0.04)] sm:p-6">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -289,11 +352,14 @@ function UserTrackingPage() {
                       Tiến độ dịch vụ
                     </p>
                     <h2 className={`${mono} mt-2 text-[20px] font-[700] text-[#080b0d]`}>
-                      Fixer xác nhận rồi bắt đầu di chuyển
+                      {isWaitingForFixerConfirmation
+                        ? "Fixer chưa xác nhận, bản đồ sẽ mở sau bước này"
+                        : "Fixer xác nhận rồi bắt đầu di chuyển"}
                     </h2>
                     <p className={`${mono} mt-2 max-w-[640px] text-[13px] leading-[22px] text-[#4a5565]`}>
-                      Thanh tiến độ bắt đầu từ bước chờ fixer xác nhận để bạn nhìn rõ
-                      quá trình tiếp nhận đơn trước khi fixer lên đường.
+                      {isWaitingForFixerConfirmation
+                        ? "ResQ vẫn tiếp tục ghi nhận vị trí của bạn trong lúc chờ. Khi fixer xác nhận đơn, lộ trình trực tiếp và khung chat sẽ bật ngay tại đây."
+                        : "Thanh tiến độ bắt đầu từ bước chờ fixer xác nhận để bạn nhìn rõ quá trình tiếp nhận đơn trước khi fixer lên đường."}
                     </p>
                   </div>
 
@@ -361,28 +427,54 @@ function UserTrackingPage() {
                       Sẵn sàng thanh toán
                     </p>
                     <p className={`${mono} mt-2 text-[14px] font-[500] text-[#080b0d]`}>
-                      Hoàn tất trước, fixer vẫn tiếp tục hỗ trợ bình thường.
+                      {isWaitingForFixerConfirmation
+                        ? "Bạn vẫn có thể xem lại thanh toán trước, hoặc hủy đơn nếu cần đổi yêu cầu."
+                        : "Hoàn tất trước, fixer vẫn tiếp tục hỗ trợ bình thường."}
                     </p>
                   </div>
 
-                  <Link
-                    to="/thanh-toan"
-                    className="inline-flex h-[48px] items-center justify-center gap-2 rounded-[12px] bg-[#ee3224] px-6 no-underline transition-colors hover:bg-[#d42b1e]"
-                  >
-                    <CreditCard size={18} className="text-white" />
-                    <span className={`${mono} text-[14px] font-[500] text-white`}>
-                      Thanh Toán
-                    </span>
-                  </Link>
+                  <div className="flex flex-col gap-3 sm:flex-row">
+                    <Link
+                      to="/thanh-toan"
+                      className="inline-flex h-[48px] items-center justify-center gap-2 rounded-[12px] bg-[#ee3224] px-6 no-underline transition-colors hover:bg-[#d42b1e]"
+                    >
+                      <CreditCard size={18} className="text-white" />
+                      <span className={`${mono} text-[14px] font-[500] text-white`}>
+                        Thanh Toán
+                      </span>
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        cancelActiveRequest();
+                      }}
+                      className="inline-flex h-[48px] items-center justify-center rounded-[12px] border border-black bg-white px-6 transition-colors hover:bg-[#f7f7f8]"
+                    >
+                      <span className={`${mono} text-[14px] font-[500] text-[#080b0d]`}>
+                        Hủy đơn
+                      </span>
+                    </button>
+                  </div>
                 </div>
 
                 <div className="mt-5">
-                  <RequestChatPanel
-                    requestId={request.id}
-                    actorId={user?.id}
-                    actorName={user?.name ?? request.requesterName}
-                    actorRole="user"
-                  />
+                  {isWaitingForFixerConfirmation ? (
+                    <div className="rounded-[18px] border border-dashed border-[rgba(4,38,153,0.12)] bg-[#faf8f5] px-5 py-5">
+                      <p className={`${mono} text-[12px] uppercase tracking-[0.16em] text-[#99a1af]`}>
+                        Khung chat
+                      </p>
+                      <p className={`${mono} mt-3 text-[13px] leading-[22px] text-[#4a5565]`}>
+                        Chat sẽ mở ngay khi fixer xác nhận đơn để hai bên có thể trao đổi trực tiếp trong cùng một luồng theo dõi.
+                      </p>
+                    </div>
+                  ) : (
+                    <RequestChatPanel
+                      requestId={request.id}
+                      actorId={user?.id}
+                      actorName={user?.name ?? request.requesterName}
+                      actorRole="user"
+                    />
+                  )}
                 </div>
               </div>
             </div>
@@ -467,6 +559,14 @@ function FixerTrackingPage() {
     incomingRequests,
     requestHistory,
   } = useResQStore();
+
+  useLiveRequestLocationSync({
+    requestId: activeRequest?.id ?? null,
+    actorId: user?.id,
+    actorRole: user?.role === "user" ? "user" : "fixer",
+    fallbackUserPoint: activeRequest?.locationPoint,
+    fallbackUserAddress: activeRequest?.locationAddress,
+  });
 
   const nextActionLabel =
     activeRequest?.status === "Fixer đã xác nhận"

@@ -130,6 +130,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (!session?.user) {
+      return;
+    }
+
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`resq-profile:${session.user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "profiles",
+          filter: `id=eq.${session.user.id}`,
+        },
+        () => {
+          void buildAuthUser(session.user).then((nextUser) => {
+            setUser(nextUser);
+            setResQStoreScope(nextUser);
+            void refreshResQStore(nextUser);
+          });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [session?.user]);
+
+  useEffect(() => {
     if (!user) {
       return;
     }

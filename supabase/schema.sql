@@ -32,6 +32,15 @@ to authenticated
 using (auth.uid() = id)
 with check (auth.uid() = id);
 
+do $$
+begin
+  alter publication supabase_realtime add table public.profiles;
+exception
+  when duplicate_object then
+    null;
+end
+$$;
+
 create table if not exists public.vehicles (
   id text primary key,
   owner_id uuid not null references auth.users (id) on delete cascade,
@@ -77,6 +86,15 @@ on public.vehicles
 for delete
 to authenticated
 using (auth.uid() = owner_id);
+
+do $$
+begin
+  alter publication supabase_realtime add table public.vehicles;
+exception
+  when duplicate_object then
+    null;
+end
+$$;
 
 create table if not exists public.service_requests (
   id text primary key,
@@ -191,6 +209,15 @@ with check (
   )
   and fixer_id = auth.uid()
 );
+
+do $$
+begin
+  alter publication supabase_realtime add table public.service_requests;
+exception
+  when duplicate_object then
+    null;
+end
+$$;
 
 create table if not exists public.service_request_messages (
   id uuid primary key default gen_random_uuid(),

@@ -15,10 +15,12 @@ import {
   Wrench,
 } from "lucide-react";
 import { TrackingLiveMap } from "../tracking/TrackingLiveMap";
+import { useLiveRequestLocationSync } from "../tracking/requestLocations";
 import { getServiceProgress } from "../tracking/request-progress";
 import { RequestChatPanel } from "../tracking/RequestChatPanel";
 import {
   advanceActiveRequestStatus,
+  cancelActiveRequest,
   confirmIncomingRequest,
   useResQStore,
 } from "../resqStore";
@@ -50,6 +52,15 @@ function MobileUserActivityPage() {
   const { activeRequest, requestHistory, isHydrating } = useResQStore();
   const liveRequest = activeRequest;
   const liveProgress = getServiceProgress(liveRequest?.status ?? "Chờ fixer xác nhận");
+  const isWaitingForFixerConfirmation = liveRequest?.status === "Chờ fixer xác nhận";
+
+  useLiveRequestLocationSync({
+    requestId: liveRequest?.id ?? null,
+    actorId: user?.id,
+    actorRole: user?.role === "fixer" ? "fixer" : "user",
+    fallbackUserPoint: liveRequest?.locationPoint,
+    fallbackUserAddress: liveRequest?.locationAddress,
+  });
 
   return (
     <div className="space-y-5 pb-5">
@@ -101,15 +112,29 @@ function MobileUserActivityPage() {
               </div>
             </div>
 
-            <div className="mt-4 overflow-hidden rounded-[22px]">
-              <TrackingLiveMap
-                requestId={liveRequest.id}
-                actorId={user?.id}
-                actorRole="user"
-                destinationPoint={liveRequest.locationPoint}
-                destinationAddress={liveRequest.locationAddress}
-              />
-            </div>
+            {isWaitingForFixerConfirmation ? (
+              <div className="mt-4 rounded-[22px] border border-[#f4c1bb] bg-white px-4 py-4">
+                <div className="inline-flex items-center gap-2 rounded-full bg-[rgba(238,50,36,0.08)] px-3 py-1.5">
+                  <LoaderCircle size={14} className="animate-spin text-[#ee3224]" />
+                  <span className={`${mono} text-[10px] uppercase tracking-[0.18em] text-[#ee3224]`}>
+                    Chờ fixer xác nhận
+                  </span>
+                </div>
+                <p className={`${mono} mt-3 text-[12px] leading-[20px] text-[#080b0d]`}>
+                  Bản đồ sẽ mở ngay khi fixer nhận đơn. Trong lúc này ResQ vẫn tiếp tục đồng bộ vị trí của bạn để fixer tiếp cận chính xác hơn.
+                </p>
+              </div>
+            ) : (
+              <div className="mt-4 overflow-hidden rounded-[22px]">
+                <TrackingLiveMap
+                  requestId={liveRequest.id}
+                  actorId={user?.id}
+                  actorRole="user"
+                  destinationPoint={liveRequest.locationPoint}
+                  destinationAddress={liveRequest.locationAddress}
+                />
+              </div>
+            )}
 
             <div className="mt-4 flex items-start gap-3 rounded-[18px] bg-white px-3 py-3">
               <MapPin size={16} className="mt-[2px] shrink-0 text-[#ee3224]" />
@@ -187,11 +212,8 @@ function MobileUserActivityPage() {
             </div>
           </section>
 
-          <section className="grid grid-cols-2 gap-3">
-            <a
-              href="tel:19001234"
-              className="rounded-[22px] bg-[#111111] px-4 py-4 text-white no-underline shadow-[0_18px_40px_rgba(8,11,13,0.16)]"
-            >
+          {!isWaitingForFixerConfirmation && (
+            <section className="rounded-[22px] bg-[#111111] px-4 py-4 text-white shadow-[0_18px_40px_rgba(8,11,13,0.16)]">
               <PhoneCall size={18} />
               <p className={`${mono} mt-4 text-[10px] uppercase tracking-[0.18em] text-white/56`}>
                 Hỗ trợ
@@ -199,8 +221,16 @@ function MobileUserActivityPage() {
               <p className="mt-2 font-['Syne',sans-serif] text-[22px] leading-none font-[700] tracking-[-0.04em]">
                 Gọi hotline
               </p>
-            </a>
+              <a
+                href="tel:19001234"
+                className={`${mono} mt-3 inline-flex text-[11px] uppercase tracking-[0.18em] text-white/78 no-underline`}
+              >
+                1900 1234
+              </a>
+            </section>
+          )}
 
+          <section className="grid grid-cols-2 gap-3">
             <Link
               to="/thanh-toan"
               className="rounded-[22px] bg-[#ee3224] px-4 py-4 text-white no-underline shadow-[0_18px_40px_rgba(238,50,36,0.28)]"
@@ -213,15 +243,42 @@ function MobileUserActivityPage() {
                 Thanh toán
               </p>
             </Link>
+
+            <button
+              type="button"
+              onClick={() => {
+                cancelActiveRequest();
+              }}
+              className="rounded-[22px] border border-black/10 bg-white px-4 py-4 text-left shadow-[0_18px_40px_rgba(8,11,13,0.06)]"
+            >
+              <ShieldCheck size={18} className="text-[#080b0d]" />
+              <p className={`${mono} mt-4 text-[10px] uppercase tracking-[0.18em] text-[#667085]`}>
+                Request
+              </p>
+              <p className="mt-2 font-['Syne',sans-serif] text-[22px] leading-none font-[700] tracking-[-0.04em] text-[#080b0d]">
+                Hủy đơn
+              </p>
+            </button>
           </section>
 
-          <RequestChatPanel
-            requestId={liveRequest.id}
-            actorId={user?.id}
-            actorName={user?.name ?? liveRequest.requesterName}
-            actorRole="user"
-            compact
-          />
+          {isWaitingForFixerConfirmation ? (
+            <section className="rounded-[26px] border border-dashed border-black/10 bg-white/88 p-4 shadow-[0_18px_40px_rgba(8,11,13,0.06)]">
+              <p className={`${mono} text-[10px] uppercase tracking-[0.18em] text-[#99a1af]`}>
+                Chat
+              </p>
+              <p className={`${mono} mt-3 text-[12px] leading-[20px] text-[#667085]`}>
+                Khung chat sẽ mở khi fixer xác nhận đơn để hai bên trao đổi trực tiếp trong cùng một luồng Theo Dõi.
+              </p>
+            </section>
+          ) : (
+            <RequestChatPanel
+              requestId={liveRequest.id}
+              actorId={user?.id}
+              actorName={user?.name ?? liveRequest.requesterName}
+              actorRole="user"
+              compact
+            />
+          )}
         </>
       ) : (
         <section className="rounded-[26px] border border-dashed border-black/10 bg-white/88 p-5 text-center shadow-[0_18px_40px_rgba(8,11,13,0.06)]">
@@ -342,6 +399,14 @@ function MobileUserActivityPage() {
 function MobileFixerActivityPage() {
   const { user } = useAuth();
   const { activeRequest, incomingRequests, requestHistory } = useResQStore();
+
+  useLiveRequestLocationSync({
+    requestId: activeRequest?.id ?? null,
+    actorId: user?.id,
+    actorRole: user?.role === "user" ? "user" : "fixer",
+    fallbackUserPoint: activeRequest?.locationPoint,
+    fallbackUserAddress: activeRequest?.locationAddress,
+  });
 
   const nextActionLabel =
     activeRequest?.status === "Fixer đã xác nhận"

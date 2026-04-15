@@ -157,8 +157,6 @@ function useRequestLocations(input: {
 }) {
   const {
     requestId,
-    actorId,
-    actorRole,
     fallbackUserPoint,
     fallbackUserAddress,
   } = input;
@@ -168,11 +166,6 @@ function useRequestLocations(input: {
   });
   const [isLoading, setIsLoading] = useState(Boolean(requestId));
   const activeChannelRef = useRef<RealtimeChannel | null>(null);
-  const watchIdRef = useRef<number | null>(null);
-  const lastPublishedRef = useRef<{
-    point: GeoPoint;
-    publishedAt: number;
-  } | null>(null);
 
   const reload = useCallback(async () => {
     if (!requestId) {
@@ -273,71 +266,9 @@ function useRequestLocations(input: {
   }, [reload, requestId]);
 
   useEffect(() => {
-    if (!requestId || !actorId || !actorRole || typeof window === "undefined") {
+    if (!requestId || typeof window === "undefined") {
       return;
     }
-
-    if (!("geolocation" in navigator)) {
-      return;
-    }
-
-    watchIdRef.current = navigator.geolocation.watchPosition(
-      (position) => {
-        const nextPoint = {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-        };
-        const now = Date.now();
-        const lastPublished = lastPublishedRef.current;
-
-        if (
-          lastPublished &&
-          measureDistanceMeters(lastPublished.point, nextPoint) < LOCATION_PUSH_MIN_METERS &&
-          now - lastPublished.publishedAt < LOCATION_PUSH_MIN_MS
-        ) {
-          return;
-        }
-
-        lastPublishedRef.current = {
-          point: nextPoint,
-          publishedAt: now,
-        };
-
-        void publishRequestLocation({
-          requestId,
-          actorId,
-          actorRole,
-          point: nextPoint,
-          accuracy: position.coords.accuracy,
-          heading:
-            typeof position.coords.heading === "number" && !Number.isNaN(position.coords.heading)
-              ? position.coords.heading
-              : null,
-          source: "browser",
-        }).catch(() => {
-          // Keep the map usable even if the location sync misses a beat.
-        });
-      },
-      () => {
-        if (actorRole === "user" && fallbackUserPoint) {
-          void publishRequestLocation({
-            requestId,
-            actorId,
-            actorRole,
-            point: fallbackUserPoint,
-            source: "manual",
-            address: fallbackUserAddress ?? null,
-          }).catch(() => {
-            // Ignore location sync errors when falling back to the chosen service point.
-          });
-        }
-      },
-      {
-        enableHighAccuracy: true,
-        maximumAge: 8_000,
-        timeout: 12_000,
-      },
-    );
 
     const intervalId = window.setInterval(() => {
       void reload();
@@ -345,17 +276,8 @@ function useRequestLocations(input: {
 
     return () => {
       window.clearInterval(intervalId);
-
-      if (watchIdRef.current !== null) {
-        navigator.geolocation.clearWatch(watchIdRef.current);
-        watchIdRef.current = null;
-      }
     };
   }, [
-    actorId,
-    actorRole,
-    fallbackUserAddress,
-    fallbackUserPoint,
     reload,
     requestId,
   ]);
@@ -427,4 +349,107 @@ export function useResolvedRequestLocations(input: {
     locations: resolvedLocations,
     isLoading,
   };
+}
+
+export function useLiveRequestLocationSync(input: {
+  requestId: string | null;
+  actorId?: string | null;
+  actorRole?: RequestLocationRole;
+  fallbackUserPoint?: GeoPoint | null;
+  fallbackUserAddress?: string | null;
+}) {
+  const {
+    requestId,
+    actorId,
+    actorRole,
+    fallbackUserPoint,
+    fallbackUserAddress,
+  } = input;
+  const watchIdRef = useRef<number | null>(null);
+  const lastPublishedRef = useRef<{
+    point: GeoPoint;
+    publishedAt: number;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!requestId || !actorId || !actorRole || typeof window === "undefined") {
+      return;
+    }
+
+    if (!("geolocation" in navigator)) {
+      return;
+    }
+
+    watchIdRef.current = navigator.geolocation.watchPosition(
+      (position) => {
+        const nextPoint = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        };
+        const now = Date.now();
+        const lastPublished = lastPublishedRef.current;
+
+        if (
+          lastPublished &&
+          measureDistanceMeters(lastPublished.point, nextPoint) < LOCATION_PUSH_MIN_METERS &&
+          now - lastPublished.publishedAt < LOCATION_PUSH_MIN_MS
+        ) {
+          return;
+        }
+
+        lastPublishedRef.current = {
+          point: nextPoint,
+          publishedAt: now,
+        };
+
+        void publishRequestLocation({
+          requestId,
+          actorId,
+          actorRole,
+          point: nextPoint,
+          accuracy: position.coords.accuracy,
+          heading:
+            typeof position.coords.heading === "number" && !Number.isNaN(position.coords.heading)
+              ? position.coords.heading
+              : null,
+          source: "browser",
+          address: actorRole === "user" ? fallbackUserAddress ?? null : null,
+        }).catch(() => {
+          // Keep the tracking flow responsive even if a location push misses one cycle.
+        });
+      },
+      () => {
+        if (actorRole === "user" && fallbackUserPoint) {
+          void publishRequestLocation({
+            requestId,
+            actorId,
+            actorRole,
+            point: fallbackUserPoint,
+            source: "manual",
+            address: fallbackUserAddress ?? null,
+          }).catch(() => {
+            // Ignore fallback sync errors and keep the last known request point visible.
+          });
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 8_000,
+        timeout: 12_000,
+      },
+    );
+
+    return () => {
+      if (watchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+        watchIdRef.current = null;
+      }
+    };
+  }, [
+    actorId,
+    actorRole,
+    fallbackUserAddress,
+    fallbackUserPoint,
+    requestId,
+  ]);
 }
