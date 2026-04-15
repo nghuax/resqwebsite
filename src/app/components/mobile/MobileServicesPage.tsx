@@ -77,6 +77,11 @@ function ServiceRequestSheet({
   const locationCoordinates = selectedLocation
     ? `${selectedLocation.point.lat.toFixed(5)}, ${selectedLocation.point.lng.toFixed(5)}`
     : null;
+  const flowSteps = [
+    "Chọn xe",
+    "Chốt vị trí",
+    "Chờ fixer xác nhận",
+  ];
 
   useEffect(() => {
     if (!availableVehicles.some((vehicle) => vehicle.id === selectedVehicleId)) {
@@ -166,6 +171,23 @@ function ServiceRequestSheet({
             ))}
           </div>
 
+          <div className="mt-4 rounded-[22px] bg-[#faf8f5] p-4">
+            <p className={`${mono} text-[10px] uppercase tracking-[0.18em] text-[#99a1af]`}>
+              Tiếp theo
+            </p>
+            <div className="mt-3 space-y-2">
+              {[
+                "ResQ đang tìm fixer gần bạn nhất cho yêu cầu này.",
+                "Trang Theo Dõi sẽ bật bản đồ và chat ngay khi fixer xác nhận đơn.",
+                "Trong lúc chờ, bạn vẫn có thể quay lại chỉnh hoặc hủy yêu cầu.",
+              ].map((item) => (
+                <p key={item} className={`${mono} text-[11px] leading-[19px] text-[#667085]`}>
+                  {item}
+                </p>
+              ))}
+            </div>
+          </div>
+
           <div className="mt-5 grid gap-3">
             <button
               onClick={() => {
@@ -218,6 +240,23 @@ function ServiceRequestSheet({
             >
               <X size={18} />
             </button>
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            {flowSteps.map((stepLabel, index) => (
+              <span
+                key={stepLabel}
+                className={`${mono} inline-flex items-center rounded-full px-3 py-1.5 text-[10px] uppercase tracking-[0.16em] ${
+                  index === 1
+                    ? "bg-[#ee3224] text-white"
+                    : index < 1
+                      ? "bg-[rgba(238,50,36,0.1)] text-[#ee3224]"
+                      : "bg-white text-[#667085]"
+                }`}
+              >
+                {index + 1}. {stepLabel}
+              </span>
+            ))}
           </div>
 
           <div className="mt-5 space-y-3">
@@ -320,6 +359,24 @@ function ServiceRequestSheet({
           >
             <X size={18} />
           </button>
+        </div>
+
+        <div className="mt-4 rounded-[22px] bg-white p-4">
+          <div className="flex flex-wrap gap-2">
+            {flowSteps.map((stepLabel, index) => (
+              <span
+                key={stepLabel}
+                className={`${mono} inline-flex items-center rounded-full px-3 py-1.5 text-[10px] uppercase tracking-[0.16em] ${
+                  index === 0 ? "bg-[#ee3224] text-white" : "bg-[#faf8f5] text-[#667085]"
+                }`}
+              >
+                {index + 1}. {stepLabel}
+              </span>
+            ))}
+          </div>
+          <p className={`${mono} mt-3 text-[11px] leading-[19px] text-[#667085]`}>
+            Xong bước này, app sẽ đưa bạn sang phần kiểm tra lại yêu cầu trước khi gửi sang hệ thống điều phối fixer.
+          </p>
         </div>
 
         <div className="mt-5 space-y-4 overflow-y-auto pb-2">
@@ -535,6 +592,7 @@ export default function MobileServicesPage() {
   const [activeFilter, setActiveFilter] = useState("all");
   const [selectedService, setSelectedService] = useState<ResQService | null>(null);
   const { activeRequest, incomingRequests } = useResQStore();
+  const navigate = useNavigate();
 
   if (user?.role === "fixer") {
     return <MobileFixerServicesPage incomingRequests={incomingRequests} activeRequest={activeRequest} />;
@@ -615,6 +673,25 @@ export default function MobileServicesPage() {
         </div>
       </section>
 
+      <section className="rounded-[26px] bg-white/92 p-4 shadow-[0_18px_40px_rgba(8,11,13,0.06)]">
+        <p className={`${mono} text-[10px] uppercase tracking-[0.18em] text-[#99a1af]`}>
+          Luồng tạo yêu cầu
+        </p>
+        <div className="mt-3 grid gap-3 sm:grid-cols-3">
+          {[
+            "1. Chọn đúng dịch vụ cho xe của bạn.",
+            "2. Xác nhận xe, vị trí và ghi chú ngắn.",
+            "3. Chuyển sang Theo Dõi để chờ fixer xác nhận.",
+          ].map((item) => (
+            <div key={item} className="rounded-[20px] bg-[#faf8f5] px-4 py-4">
+              <p className={`${mono} text-[11px] leading-[19px] text-[#667085]`}>
+                {item}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       <section className="space-y-3">
         {filteredServices.map((service) => {
           const Icon = service.icon;
@@ -622,7 +699,14 @@ export default function MobileServicesPage() {
           return (
             <button
               key={service.id}
-              onClick={() => setSelectedService(service)}
+              onClick={() => {
+                if (activeRequest) {
+                  navigate("/theo-doi");
+                  return;
+                }
+
+                setSelectedService(service);
+              }}
               className="w-full rounded-[26px] bg-white/92 p-4 text-left shadow-[0_18px_40px_rgba(8,11,13,0.06)]"
             >
               <div className="flex items-start justify-between gap-4">
@@ -661,6 +745,11 @@ export default function MobileServicesPage() {
                   </p>
                 </div>
               </div>
+              {activeRequest && (
+                <p className={`${mono} mt-3 text-[11px] leading-[18px] text-[#a8564f]`}>
+                  Bạn đang có request mở. Chạm để quay lại Theo Dõi thay vì tạo request mới.
+                </p>
+              )}
             </button>
           );
         })}

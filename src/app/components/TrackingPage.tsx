@@ -188,6 +188,8 @@ function UserTrackingPage() {
   const VehicleIcon = request.vehicleType === "Xe máy" ? Bike : Car;
   const serviceProgress = getServiceProgress(request.status);
   const isWaitingForFixerConfirmation = request.status === "Chờ fixer xác nhận";
+  const currentProgressStep = serviceProgress.steps[serviceProgress.currentIndex];
+  const nextProgressStep = serviceProgress.steps[serviceProgress.currentIndex + 1] ?? null;
   const heroLabel =
     isWaitingForFixerConfirmation
       ? "Yêu cầu đang chờ fixer xác nhận"
@@ -371,6 +373,32 @@ function UserTrackingPage() {
                 </div>
 
                 <div className="mt-5">
+                  <div className="mb-5 grid gap-3 sm:grid-cols-2">
+                    <ProgressFocusCard
+                      label="Hiện tại"
+                      title={currentProgressStep?.label ?? request.status}
+                      detail={
+                        isWaitingForFixerConfirmation
+                          ? "ResQ đang điều phối request tới fixer gần bạn nhất và vẫn tiếp tục đồng bộ vị trí của bạn trong nền."
+                          : currentProgressStep?.detail ?? "Đơn đang tiếp tục được xử lý trên cùng một luồng."
+                      }
+                      accent
+                    />
+                    <ProgressFocusCard
+                      label="Tiếp theo"
+                      title={
+                        nextProgressStep?.label
+                        ?? (request.status === "Hoàn thành" ? "Đã hoàn tất" : "Chờ bước tiếp theo")
+                      }
+                      detail={
+                        nextProgressStep?.detail
+                        ?? (request.status === "Hoàn thành"
+                          ? "Bạn có thể xem lại lịch sử, thanh toán và đánh giá fixer sau khi quá trình kết thúc."
+                          : "Ngay khi fixer chuyển bước, trang này sẽ tự làm mới để bạn không cần thao tác thêm.")
+                      }
+                    />
+                  </div>
+
                   <div className="h-[10px] overflow-hidden rounded-full bg-[#f1f2f4]">
                     <div
                       className="h-full rounded-full bg-[linear-gradient(90deg,#ee3224_0%,#ff7d6f_100%)] transition-all duration-500"
@@ -434,15 +462,27 @@ function UserTrackingPage() {
                   </div>
 
                   <div className="flex flex-col gap-3 sm:flex-row">
-                    <Link
-                      to="/thanh-toan"
-                      className="inline-flex h-[48px] items-center justify-center gap-2 rounded-[12px] bg-[#ee3224] px-6 no-underline transition-colors hover:bg-[#d42b1e]"
-                    >
-                      <CreditCard size={18} className="text-white" />
-                      <span className={`${mono} text-[14px] font-[500] text-white`}>
-                        Thanh Toán
-                      </span>
-                    </Link>
+                    {isWaitingForFixerConfirmation ? (
+                      <Link
+                        to="/dich-vu"
+                        className="inline-flex h-[48px] items-center justify-center gap-2 rounded-[12px] bg-[#ee3224] px-6 no-underline transition-colors hover:bg-[#d42b1e]"
+                      >
+                        <Wrench size={18} className="text-white" />
+                        <span className={`${mono} text-[14px] font-[500] text-white`}>
+                          Xem Dịch Vụ
+                        </span>
+                      </Link>
+                    ) : (
+                      <Link
+                        to="/thanh-toan"
+                        className="inline-flex h-[48px] items-center justify-center gap-2 rounded-[12px] bg-[#ee3224] px-6 no-underline transition-colors hover:bg-[#d42b1e]"
+                      >
+                        <CreditCard size={18} className="text-white" />
+                        <span className={`${mono} text-[14px] font-[500] text-white`}>
+                          Thanh Toán
+                        </span>
+                      </Link>
+                    )}
                     <button
                       type="button"
                       onClick={() => {
@@ -548,6 +588,38 @@ function UserTrackingPage() {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function ProgressFocusCard({
+  label,
+  title,
+  detail,
+  accent = false,
+}: {
+  label: string;
+  title: string;
+  detail: string;
+  accent?: boolean;
+}) {
+  return (
+    <div
+      className={`rounded-[16px] border px-4 py-4 ${
+        accent
+          ? "border-[rgba(238,50,36,0.18)] bg-[rgba(238,50,36,0.05)]"
+          : "border-[rgba(4,38,153,0.08)] bg-[#f7f7f8]"
+      }`}
+    >
+      <p className={`${mono} text-[11px] uppercase tracking-[0.16em] text-[#99a1af]`}>
+        {label}
+      </p>
+      <p className={`${mono} mt-2 text-[15px] font-[700] text-[#080b0d]`}>
+        {title}
+      </p>
+      <p className={`${mono} mt-2 text-[12px] leading-[20px] text-[#4a5565]`}>
+        {detail}
+      </p>
     </div>
   );
 }

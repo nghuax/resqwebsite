@@ -95,6 +95,12 @@ function ServiceModal({ service, onClose }: { service: Service; onClose: () => v
     ? `${selectedLocation.point.lat.toFixed(5)}, ${selectedLocation.point.lng.toFixed(5)}`
     : null;
   const requestId = submittedRequest?.id ?? "RSQ-330993";
+  const journeySteps = [
+    "Chọn xe phù hợp",
+    "Ghim vị trí và ghi chú",
+    "Chờ fixer xác nhận",
+  ];
+  const currentJourneyStep = step === "describe" ? 1 : 0;
 
   const handleAddVehicle = (payload: {
     name: string;
@@ -199,6 +205,23 @@ function ServiceModal({ service, onClose }: { service: Service; onClose: () => v
               ))}
             </div>
 
+            <div className="mb-[24px] rounded-[14px] bg-[#faf8f5] p-4">
+              <p className={`${mono} text-[11px] uppercase tracking-[0.16em] text-[#99a1af]`}>
+                Tiếp theo
+              </p>
+              <div className="mt-3 space-y-3">
+                {[
+                  "1. ResQ điều phối yêu cầu tới fixer phù hợp gần bạn.",
+                  "2. Trang Theo Dõi sẽ bật bản đồ và khung chat ngay khi fixer xác nhận.",
+                  "3. Bạn có thể giữ nguyên tại trang này hoặc sang Theo Dõi để chờ trực tiếp.",
+                ].map((item) => (
+                  <p key={item} className={`${mono} text-[12px] leading-[20px] text-[#4a5565]`}>
+                    {item}
+                  </p>
+                ))}
+              </div>
+            </div>
+
             <div className="flex flex-col gap-[12px] sm:flex-row">
               <button
                 onClick={onClose}
@@ -248,6 +271,33 @@ function ServiceModal({ service, onClose }: { service: Service; onClose: () => v
             <h2 className={`${mono} mb-[20px] text-[20px] font-[700] text-[#080b0d]`}>
               Mô tả sự cố
             </h2>
+
+            <div className="mb-[20px] rounded-[14px] bg-[#faf8f5] p-4">
+              <div className="flex flex-wrap gap-2">
+                {journeySteps.map((item, index) => {
+                  const isActive = index === currentJourneyStep;
+                  const isComplete = index < currentJourneyStep;
+
+                  return (
+                    <span
+                      key={item}
+                      className={`${mono} inline-flex items-center rounded-full px-3 py-1.5 text-[11px] uppercase tracking-[0.14em] ${
+                        isActive
+                          ? "bg-[#ee3224] text-white"
+                          : isComplete
+                            ? "bg-[rgba(238,50,36,0.1)] text-[#ee3224]"
+                            : "bg-white text-[#667085]"
+                      }`}
+                    >
+                      {index + 1}. {item}
+                    </span>
+                  );
+                })}
+              </div>
+              <p className={`${mono} mt-3 text-[12px] leading-[20px] text-[#4a5565]`}>
+                Kiểm tra lại vị trí và thêm ghi chú ngắn để fixer nắm tình trạng xe ngay khi nhận đơn.
+              </p>
+            </div>
 
             <div className="mb-[24px] flex flex-col gap-[12px] rounded-[10px] border border-[rgba(4,38,153,0.08)] p-[16px] sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-[12px]">
@@ -317,7 +367,7 @@ function ServiceModal({ service, onClose }: { service: Service; onClose: () => v
                 disabled={!selectedVehicleData || !selectedLocation}
               >
                 <span className={`${mono} text-[14px] font-[500] text-white`}>
-                  Gửi yêu cầu
+                  Xác nhận và gửi yêu cầu
                 </span>
               </button>
             </div>
@@ -364,6 +414,30 @@ function ServiceModal({ service, onClose }: { service: Service; onClose: () => v
           <p className={`${mono} mb-[24px] text-[14px] leading-[22px] text-[#080b0d]`}>
             {service.desc}
           </p>
+
+          <div className="mb-[24px] rounded-[14px] bg-[#faf8f5] p-4">
+            <div className="flex flex-wrap gap-2">
+              {journeySteps.map((item, index) => {
+                const isActive = index === currentJourneyStep;
+
+                return (
+                  <span
+                    key={item}
+                    className={`${mono} inline-flex items-center rounded-full px-3 py-1.5 text-[11px] uppercase tracking-[0.14em] ${
+                      isActive
+                        ? "bg-[#ee3224] text-white"
+                        : "bg-white text-[#667085]"
+                    }`}
+                  >
+                    {index + 1}. {item}
+                  </span>
+                );
+              })}
+            </div>
+            <p className={`${mono} mt-3 text-[12px] leading-[20px] text-[#4a5565]`}>
+              Luồng tạo yêu cầu mới: chọn xe, chốt vị trí, rồi chuyển sang trạng thái chờ fixer xác nhận trong cùng một nhịp.
+            </p>
+          </div>
 
           {service.includes && (
             <div className="mb-[24px]">
@@ -578,8 +652,10 @@ function ServiceModal({ service, onClose }: { service: Service; onClose: () => v
 
 export default function ServicesPage() {
   const { user } = useAuth();
+  const { activeRequest } = useResQStore();
   const [activeFilter, setActiveFilter] = useState("all");
   const [selectedService, setSelectedService] = useState<Service | null>(null);
+  const navigate = useNavigate();
 
   if (user?.role === "fixer") {
     return <FixerServicesPage />;
@@ -615,6 +691,32 @@ export default function ServicesPage() {
             </div>
           </div>
 
+          {activeRequest && (
+            <div className="resq-reveal resq-reveal--delay-1 mb-8 rounded-[20px] border border-[rgba(4,38,153,0.08)] bg-[linear-gradient(135deg,#fff4ef_0%,#fffdfb_100%)] p-5 shadow-[0_18px_50px_rgba(8,11,13,0.04)] sm:p-6">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="max-w-[720px]">
+                  <p className={`${mono} text-[11px] uppercase tracking-[0.18em] text-[#99a1af]`}>
+                    Yêu cầu đang mở
+                  </p>
+                  <h2 className={`${mono} mt-2 text-[24px] font-[700] text-[#080b0d]`}>
+                    {activeRequest.serviceTitle} đang ở trạng thái {activeRequest.status.toLowerCase()}
+                  </h2>
+                  <p className={`${mono} mt-2 text-[13px] leading-[22px] text-[#4a5565]`}>
+                    Để luồng sử dụng không bị đứt đoạn, ResQ đang giữ bạn trong một request duy nhất. Tiếp tục theo dõi request hiện tại, hoặc hủy request đó trước khi tạo yêu cầu mới.
+                  </p>
+                </div>
+                <Link
+                  to="/theo-doi"
+                  className="inline-flex h-[48px] items-center justify-center rounded-[12px] bg-[#ee3224] px-6 no-underline transition-colors hover:bg-[#d42b1e]"
+                >
+                  <span className={`${mono} text-[13px] font-[500] text-white`}>
+                    Tiếp tục Theo Dõi
+                  </span>
+                </Link>
+              </div>
+            </div>
+          )}
+
           <div className="resq-reveal resq-reveal--delay-1 mb-10 flex flex-wrap gap-[8px]">
             {filters.map((filter) => (
               <button
@@ -648,7 +750,14 @@ export default function ServicesPage() {
               return (
                 <div
                   key={service.id}
-                  onClick={() => setSelectedService(service)}
+                  onClick={() => {
+                    if (activeRequest) {
+                      navigate("/theo-doi");
+                      return;
+                    }
+
+                    setSelectedService(service);
+                  }}
                   className="resq-card-lift resq-reveal relative flex min-h-[231px] cursor-pointer flex-col rounded-[16px] border border-[rgba(0,0,0,0.05)] bg-white p-[24px] transition-shadow hover:shadow-md"
                 >
                   <div className="absolute top-[16px] right-[16px] flex gap-[4px]">
@@ -676,6 +785,11 @@ export default function ServicesPage() {
                   <p className={`${mono} mt-auto pt-4 text-[14px] text-[#ee3224]`}>
                     {service.price}
                   </p>
+                  {activeRequest && (
+                    <p className={`${mono} mt-2 text-[11px] leading-[18px] text-[#a8564f]`}>
+                      Bạn đang có request mở. Chạm để quay lại trang Theo Dõi.
+                    </p>
+                  )}
                 </div>
               );
             })}

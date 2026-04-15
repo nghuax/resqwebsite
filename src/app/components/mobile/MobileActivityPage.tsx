@@ -53,6 +53,8 @@ function MobileUserActivityPage() {
   const liveRequest = activeRequest;
   const liveProgress = getServiceProgress(liveRequest?.status ?? "Chờ fixer xác nhận");
   const isWaitingForFixerConfirmation = liveRequest?.status === "Chờ fixer xác nhận";
+  const currentProgressStep = liveProgress.steps[liveProgress.currentIndex];
+  const nextProgressStep = liveProgress.steps[liveProgress.currentIndex + 1] ?? null;
 
   useLiveRequestLocationSync({
     requestId: liveRequest?.id ?? null,
@@ -164,6 +166,27 @@ function MobileUserActivityPage() {
               </span>
             </div>
 
+            <div className="mb-4 grid gap-3">
+              <MobileProgressFocusCard
+                label="Hiện tại"
+                title={currentProgressStep?.label ?? (liveRequest?.status ?? "Chờ fixer xác nhận")}
+                detail={
+                  isWaitingForFixerConfirmation
+                    ? "ResQ đang giữ vị trí hiện tại của bạn và tìm fixer phù hợp để nhận đơn."
+                    : currentProgressStep?.detail ?? "Tiến độ đang được cập nhật trực tiếp từ fixer."
+                }
+                accent
+              />
+              <MobileProgressFocusCard
+                label="Tiếp theo"
+                title={nextProgressStep?.label ?? "Tiếp tục theo dõi"}
+                detail={
+                  nextProgressStep?.detail
+                  ?? "Ngay khi fixer đổi trạng thái, trang này sẽ tự làm mới để bạn không cần thao tác thêm."
+                }
+              />
+            </div>
+
             <div className="mb-4 h-[10px] overflow-hidden rounded-full bg-[#f1f2f4]">
               <div
                 className="h-full rounded-full bg-[linear-gradient(90deg,#ee3224_0%,#ff7d6f_100%)]"
@@ -231,18 +254,33 @@ function MobileUserActivityPage() {
           )}
 
           <section className="grid grid-cols-2 gap-3">
-            <Link
-              to="/thanh-toan"
-              className="rounded-[22px] bg-[#ee3224] px-4 py-4 text-white no-underline shadow-[0_18px_40px_rgba(238,50,36,0.28)]"
-            >
-              <CreditCard size={18} />
-              <p className={`${mono} mt-4 text-[10px] uppercase tracking-[0.18em] text-white/70`}>
-                Payment
-              </p>
-              <p className="mt-2 font-['Syne',sans-serif] text-[22px] leading-none font-[700] tracking-[-0.04em]">
-                Thanh toán
-              </p>
-            </Link>
+            {isWaitingForFixerConfirmation ? (
+              <Link
+                to="/dich-vu"
+                className="rounded-[22px] bg-[#ee3224] px-4 py-4 text-white no-underline shadow-[0_18px_40px_rgba(238,50,36,0.28)]"
+              >
+                <Wrench size={18} />
+                <p className={`${mono} mt-4 text-[10px] uppercase tracking-[0.18em] text-white/70`}>
+                  Services
+                </p>
+                <p className="mt-2 font-['Syne',sans-serif] text-[22px] leading-none font-[700] tracking-[-0.04em]">
+                  Dịch Vụ
+                </p>
+              </Link>
+            ) : (
+              <Link
+                to="/thanh-toan"
+                className="rounded-[22px] bg-[#ee3224] px-4 py-4 text-white no-underline shadow-[0_18px_40px_rgba(238,50,36,0.28)]"
+              >
+                <CreditCard size={18} />
+                <p className={`${mono} mt-4 text-[10px] uppercase tracking-[0.18em] text-white/70`}>
+                  Payment
+                </p>
+                <p className="mt-2 font-['Syne',sans-serif] text-[22px] leading-none font-[700] tracking-[-0.04em]">
+                  Thanh toán
+                </p>
+              </Link>
+            )}
 
             <button
               type="button"
@@ -392,6 +430,38 @@ function MobileUserActivityPage() {
           )}
         </div>
       </section>
+    </div>
+  );
+}
+
+function MobileProgressFocusCard({
+  label,
+  title,
+  detail,
+  accent = false,
+}: {
+  label: string;
+  title: string;
+  detail: string;
+  accent?: boolean;
+}) {
+  return (
+    <div
+      className={`rounded-[20px] border px-4 py-4 ${
+        accent
+          ? "border-[#f4c1bb] bg-[rgba(238,50,36,0.05)]"
+          : "border-black/5 bg-[#faf8f5]"
+      }`}
+    >
+      <p className={`${mono} text-[10px] uppercase tracking-[0.16em] text-[#99a1af]`}>
+        {label}
+      </p>
+      <p className="mt-2 font-['Syne',sans-serif] text-[22px] leading-[0.98] font-[700] tracking-[-0.04em] text-[#080b0d]">
+        {title}
+      </p>
+      <p className={`${mono} mt-2 text-[11px] leading-[19px] text-[#667085]`}>
+        {detail}
+      </p>
     </div>
   );
 }
