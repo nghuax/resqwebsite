@@ -4,6 +4,7 @@ import type { ResQAuthRole, ResQAuthUser } from "@/utils/supabase/auth";
 import { createClient } from "@/utils/supabase/client";
 import { HO_CHI_MINH_CITY_FALLBACK, type GeoPoint } from "./tracking/tracking-utils";
 import { seedRequestLocation } from "./tracking/requestLocations";
+import { sendRequestChatMessage } from "./tracking/requestChat";
 
 export type VehicleType = "Xe máy" | "Ô tô";
 export type ResQRequestStatus =
@@ -588,6 +589,39 @@ function getNextActiveStatus(status: ResQRequestStatus): ResQRequestStatus {
   }
 }
 
+function getStatusUpdateMessage(status: ResQRequestStatus) {
+  switch (status) {
+    case "Chờ fixer xác nhận":
+      return "Yêu cầu đã được ghi nhận. Fixer sẽ xác nhận đơn trong ít phút tới.";
+    case "Fixer đã xác nhận":
+      return "Fixer đã xác nhận đơn và bắt đầu chuẩn bị di chuyển.";
+    case "Đang tiếp cận":
+      return "Fixer đang di chuyển tới điểm hẹn của bạn.";
+    case "Đang hỗ trợ":
+      return "Fixer đã đến nơi và đang hỗ trợ trực tiếp.";
+    case "Hoàn thành":
+      return "Ca hỗ trợ đã hoàn thành. Bạn có thể xem lại lịch sử và thanh toán nếu cần.";
+    case "Đã hủy":
+      return "Yêu cầu đã được hủy.";
+    default:
+      return "";
+  }
+}
+
+function publishSystemRequestMessage(request: ActiveResQRequest, body: string) {
+  if (!request.id || !body.trim()) {
+    return;
+  }
+
+  void sendRequestChatMessage({
+    requestId: request.id,
+    senderId: null,
+    senderName: "ResQ",
+    senderRole: "system",
+    body,
+  });
+}
+
 export function addVehicle(input: AddVehicleInput) {
   const nextVehicle: ResQVehicle = {
     id: createEntityId("vehicle"),
@@ -628,6 +662,10 @@ export function setActiveRequest(request: ActiveResQRequest) {
   currentRequestHistory = upsertHistoryEntry(toHistoryItem(currentActiveRequest));
   emitChange();
   void persistRequestSnapshot(currentActiveRequest);
+  publishSystemRequestMessage(
+    currentActiveRequest,
+    getStatusUpdateMessage(currentActiveRequest.status),
+  );
   seedRequestLocation({
     requestId: currentActiveRequest.id,
     actorId: currentActiveRequest.requesterId,
@@ -657,6 +695,10 @@ export function cancelActiveRequest() {
   currentRequestHistory = upsertHistoryEntry(toHistoryItem(cancelledRequest));
   emitChange();
   void persistRequestSnapshot(cancelledRequest);
+  publishSystemRequestMessage(
+    cancelledRequest,
+    getStatusUpdateMessage(cancelledRequest.status),
+  );
   return cancelledRequest;
 }
 
@@ -689,6 +731,10 @@ export function confirmIncomingRequest(requestId: string) {
   currentRequestHistory = upsertHistoryEntry(toHistoryItem(confirmedRequest));
   emitChange();
   void persistRequestSnapshot(confirmedRequest);
+  publishSystemRequestMessage(
+    confirmedRequest,
+    `${currentActor.name} đã xác nhận đơn. ${getStatusUpdateMessage(confirmedRequest.status)}`,
+  );
   return confirmedRequest;
 }
 
@@ -716,6 +762,7 @@ export function advanceActiveRequestStatus() {
   );
   emitChange();
   void persistRequestSnapshot(nextRequest);
+  publishSystemRequestMessage(nextRequest, getStatusUpdateMessage(nextStatus));
   return nextRequest;
 }
 
@@ -743,6 +790,10 @@ export function completeActiveRequest(input: {
   );
   emitChange();
   void persistRequestSnapshot(completedRequest);
+  publishSystemRequestMessage(
+    completedRequest,
+    getStatusUpdateMessage(completedRequest.status),
+  );
   return completedRequest;
 }
 

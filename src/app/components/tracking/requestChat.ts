@@ -158,6 +158,31 @@ async function sendRemoteRequestChatMessage(input: {
   }
 }
 
+export async function sendRequestChatMessage(input: {
+  requestId: string;
+  senderId?: string | null;
+  senderName: string;
+  senderRole: RequestChatSenderRole;
+  body: string;
+}) {
+  const nextBody = input.body.trim();
+  if (!nextBody) {
+    return;
+  }
+
+  try {
+    await sendRemoteRequestChatMessage(input);
+  } catch {
+    appendLocalRequestChatMessage({
+      requestId: input.requestId,
+      senderId: input.senderId,
+      senderName: input.senderName,
+      senderRole: input.senderRole,
+      body: nextBody,
+    });
+  }
+}
+
 export function useRequestChat(requestId: string | null) {
   const [messages, setMessages] = useState<RequestChatMessage[]>(() =>
     loadLocalRequestChatMessages(requestId),
