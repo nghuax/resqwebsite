@@ -2,9 +2,18 @@ import { useSyncExternalStore } from "react";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import type { ResQAuthRole, ResQAuthUser } from "@/utils/supabase/auth";
 import { createClient } from "@/utils/supabase/client";
-import { HO_CHI_MINH_CITY_FALLBACK, type GeoPoint } from "./tracking/tracking-utils";
+import {
+  acceptServiceRequest,
+  advanceServiceRequestStatus as advanceServiceRequestStatusRemote,
+  cancelServiceRequest as cancelServiceRequestRemote,
+  completeServiceRequest as completeServiceRequestRemote,
+  createServiceRequest as createServiceRequestRemote,
+} from "@/utils/supabase/requestWorkflow";
+import {
+  HO_CHI_MINH_CITY_FALLBACK,
+  type GeoPoint,
+} from "./tracking/tracking-utils";
 import { seedRequestLocation } from "./tracking/requestLocations";
-import { sendRequestChatMessage } from "./tracking/requestChat";
 
 export type VehicleType = "Xe máy" | "Ô tô";
 export type ResQRequestStatus =
@@ -121,7 +130,7 @@ const INCOMING_REQUESTS_STORAGE_KEY = "resq_incoming_requests";
 const VEHICLES_TABLE = "vehicles";
 const REQUESTS_TABLE = "service_requests";
 const ACTIVE_REQUEST_STATUS_FILTER =
-  "(\"Chờ fixer xác nhận\",\"Fixer đã xác nhận\",\"Đang tiếp cận\",\"Đang hỗ trợ\")";
+  '("Chờ fixer xác nhận","Fixer đã xác nhận","Đang tiếp cận","Đang hỗ trợ")';
 
 const defaultVehicles: ResQVehicle[] = [
   {
@@ -181,7 +190,9 @@ function hydrateStore() {
       getScopedStorageKey(VEHICLES_STORAGE_KEY),
     );
     if (savedVehicles) {
-      currentVehicles = normalizeVehicles(JSON.parse(savedVehicles) as ResQVehicle[]);
+      currentVehicles = normalizeVehicles(
+        JSON.parse(savedVehicles) as ResQVehicle[],
+      );
     }
 
     const savedRequest = window.localStorage.getItem(
@@ -267,7 +278,9 @@ function persistStore() {
         JSON.stringify(currentActiveRequest),
       );
     } else {
-      window.localStorage.removeItem(getScopedStorageKey(ACTIVE_REQUEST_STORAGE_KEY));
+      window.localStorage.removeItem(
+        getScopedStorageKey(ACTIVE_REQUEST_STORAGE_KEY),
+      );
     }
 
     if (currentIncomingRequests.length > 0) {
@@ -351,16 +364,23 @@ function normalizeRequest(request: ActiveResQRequest): ActiveResQRequest {
 function normalizeIncomingRequests(requests: ActiveResQRequest[]) {
   return [...requests]
     .map((request) => normalizeRequest(request))
-    .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt));
+    .sort(
+      (left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt),
+    );
 }
 
 function normalizeHistory(history: ResQHistoryItem[]) {
   return [...history]
     .map((entry) => ({
       ...normalizeRequest(entry),
-      paymentStatus: entry.paymentStatus === "Đã thanh toán" ? "Đã thanh toán" : "Chưa thanh toán",
+      paymentStatus:
+        entry.paymentStatus === "Đã thanh toán"
+          ? "Đã thanh toán"
+          : "Chưa thanh toán",
     }))
-    .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt))
+    .sort(
+      (left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt),
+    )
     .slice(0, 12);
 }
 
@@ -370,7 +390,8 @@ function toHistoryItem(
 ) {
   return {
     ...request,
-    paymentStatus: request.status === "Hoàn thành" ? "Đã thanh toán" : "Chưa thanh toán",
+    paymentStatus:
+      request.status === "Hoàn thành" ? "Đã thanh toán" : "Chưa thanh toán",
     ...overrides,
   } satisfies ResQHistoryItem;
 }
@@ -446,38 +467,6 @@ function mapRequestRecordToRequest(record: RequestRecord): ActiveResQRequest {
   });
 }
 
-function mapRequestToRecord(request: ActiveResQRequest): RequestRecord | null {
-  if (!request.requesterId) {
-    return null;
-  }
-
-  return {
-    id: request.id,
-    requester_id: request.requesterId,
-    requester_name: request.requesterName,
-    requester_phone: request.requesterPhone || null,
-    service_id: request.serviceId,
-    service_title: request.serviceTitle,
-    service_price: request.servicePrice,
-    service_eta: request.serviceEta,
-    vehicle_id: request.vehicleId,
-    vehicle_name: request.vehicleName,
-    vehicle_plate: request.vehiclePlate,
-    vehicle_type: request.vehicleType,
-    location_address: request.locationAddress,
-    location_lat: request.locationPoint.lat,
-    location_lng: request.locationPoint.lng,
-    location_source: request.locationSource,
-    notes: request.notes || null,
-    fixer_id: request.fixerId,
-    fixer_name: request.fixerName || null,
-    fixer_team: request.fixerTeam || null,
-    fixer_vehicle: request.fixerVehicle || null,
-    status: request.status,
-    created_at: request.createdAt,
-  };
-}
-
 async function persistVehiclesSnapshot(nextVehicles: ResQVehicle[]) {
   if (!currentActor?.id) {
     return;
@@ -507,19 +496,6 @@ async function persistVehiclesSnapshot(nextVehicles: ResQVehicle[]) {
     await deleteQuery;
   } catch {
     // Keep the local state usable even if the remote sync fails.
-  }
-}
-
-async function persistRequestSnapshot(request: ActiveResQRequest) {
-  const row = mapRequestToRecord(request);
-  if (!row) {
-    return;
-  }
-
-  try {
-    await createClient().from(REQUESTS_TABLE).upsert(row, { onConflict: "id" });
-  } catch {
-    // Keep local request flow responsive even if Supabase is temporarily unavailable.
   }
 }
 
@@ -589,37 +565,12 @@ function getNextActiveStatus(status: ResQRequestStatus): ResQRequestStatus {
   }
 }
 
-function getStatusUpdateMessage(status: ResQRequestStatus) {
-  switch (status) {
-    case "Chờ fixer xác nhận":
-      return "Yêu cầu đã được ghi nhận. Fixer sẽ xác nhận đơn trong ít phút tới.";
-    case "Fixer đã xác nhận":
-      return "Fixer đã xác nhận đơn và bắt đầu chuẩn bị di chuyển.";
-    case "Đang tiếp cận":
-      return "Fixer đang di chuyển tới điểm hẹn của bạn.";
-    case "Đang hỗ trợ":
-      return "Fixer đã đến nơi và đang hỗ trợ trực tiếp.";
-    case "Hoàn thành":
-      return "Ca hỗ trợ đã hoàn thành. Bạn có thể xem lại lịch sử và thanh toán nếu cần.";
-    case "Đã hủy":
-      return "Yêu cầu đã được hủy.";
-    default:
-      return "";
-  }
-}
-
-function publishSystemRequestMessage(request: ActiveResQRequest, body: string) {
-  if (!request.id || !body.trim()) {
+function refreshRemoteRequestState() {
+  if (!currentActor) {
     return;
   }
 
-  void sendRequestChatMessage({
-    requestId: request.id,
-    senderId: null,
-    senderName: "ResQ",
-    senderRole: "system",
-    body,
-  });
+  void refreshResQStore(currentActor);
 }
 
 export function addVehicle(input: AddVehicleInput) {
@@ -659,13 +610,32 @@ export function removeVehicle(vehicleId: string) {
 
 export function setActiveRequest(request: ActiveResQRequest) {
   currentActiveRequest = normalizeRequest(request);
-  currentRequestHistory = upsertHistoryEntry(toHistoryItem(currentActiveRequest));
-  emitChange();
-  void persistRequestSnapshot(currentActiveRequest);
-  publishSystemRequestMessage(
-    currentActiveRequest,
-    getStatusUpdateMessage(currentActiveRequest.status),
+  currentRequestHistory = upsertHistoryEntry(
+    toHistoryItem(currentActiveRequest),
   );
+  emitChange();
+  void createServiceRequestRemote({
+    id: currentActiveRequest.id,
+    serviceId: currentActiveRequest.serviceId,
+    serviceTitle: currentActiveRequest.serviceTitle,
+    servicePrice: currentActiveRequest.servicePrice,
+    serviceEta: currentActiveRequest.serviceEta,
+    vehicleId: currentActiveRequest.vehicleId,
+    vehicleName: currentActiveRequest.vehicleName,
+    vehiclePlate: currentActiveRequest.vehiclePlate,
+    vehicleType: currentActiveRequest.vehicleType,
+    locationAddress: currentActiveRequest.locationAddress,
+    locationLat: currentActiveRequest.locationPoint.lat,
+    locationLng: currentActiveRequest.locationPoint.lng,
+    locationSource: currentActiveRequest.locationSource,
+    notes: currentActiveRequest.notes,
+  })
+    .then(() => {
+      refreshRemoteRequestState();
+    })
+    .catch(() => {
+      // Keep the optimistic request visible and let the next sync reconcile remote state.
+    });
   seedRequestLocation({
     requestId: currentActiveRequest.id,
     actorId: currentActiveRequest.requesterId,
@@ -694,11 +664,13 @@ export function cancelActiveRequest() {
   currentActiveRequest = null;
   currentRequestHistory = upsertHistoryEntry(toHistoryItem(cancelledRequest));
   emitChange();
-  void persistRequestSnapshot(cancelledRequest);
-  publishSystemRequestMessage(
-    cancelledRequest,
-    getStatusUpdateMessage(cancelledRequest.status),
-  );
+  void cancelServiceRequestRemote(cancelledRequest.id)
+    .then(() => {
+      refreshRemoteRequestState();
+    })
+    .catch(() => {
+      // Keep the optimistic cancellation visible and let the next sync reconcile remote state.
+    });
   return cancelledRequest;
 }
 
@@ -707,7 +679,9 @@ export function confirmIncomingRequest(requestId: string) {
     return null;
   }
 
-  const nextRequest = currentIncomingRequests.find((request) => request.id === requestId);
+  const nextRequest = currentIncomingRequests.find(
+    (request) => request.id === requestId,
+  );
   if (!nextRequest) {
     return null;
   }
@@ -730,11 +704,13 @@ export function confirmIncomingRequest(requestId: string) {
   currentActiveRequest = confirmedRequest;
   currentRequestHistory = upsertHistoryEntry(toHistoryItem(confirmedRequest));
   emitChange();
-  void persistRequestSnapshot(confirmedRequest);
-  publishSystemRequestMessage(
-    confirmedRequest,
-    `${currentActor.name} đã xác nhận đơn. ${getStatusUpdateMessage(confirmedRequest.status)}`,
-  );
+  void acceptServiceRequest(requestId)
+    .then(() => {
+      refreshRemoteRequestState();
+    })
+    .catch(() => {
+      // Keep the optimistic confirmation visible and let the next sync reconcile remote state.
+    });
   return confirmedRequest;
 }
 
@@ -751,18 +727,26 @@ export function advanceActiveRequestStatus() {
 
   currentActiveRequest = nextRequest;
   currentRequestHistory = upsertHistoryEntry(
-    toHistoryItem(nextRequest, nextStatus === "Hoàn thành"
-      ? {
-          paymentStatus: "Đã thanh toán",
-          paymentMethod: "Thanh toán tại hiện trường",
-          totalAmount: nextRequest.servicePrice,
-          completedAt: new Date().toISOString(),
-        }
-      : undefined),
+    toHistoryItem(
+      nextRequest,
+      nextStatus === "Hoàn thành"
+        ? {
+            paymentStatus: "Đã thanh toán",
+            paymentMethod: "Thanh toán tại hiện trường",
+            totalAmount: nextRequest.servicePrice,
+            completedAt: new Date().toISOString(),
+          }
+        : undefined,
+    ),
   );
   emitChange();
-  void persistRequestSnapshot(nextRequest);
-  publishSystemRequestMessage(nextRequest, getStatusUpdateMessage(nextStatus));
+  void advanceServiceRequestStatusRemote(nextRequest.id)
+    .then(() => {
+      refreshRemoteRequestState();
+    })
+    .catch(() => {
+      // Keep the optimistic progress visible and let the next sync reconcile remote state.
+    });
   return nextRequest;
 }
 
@@ -789,11 +773,13 @@ export function completeActiveRequest(input: {
     }),
   );
   emitChange();
-  void persistRequestSnapshot(completedRequest);
-  publishSystemRequestMessage(
-    completedRequest,
-    getStatusUpdateMessage(completedRequest.status),
-  );
+  void completeServiceRequestRemote(completedRequest.id)
+    .then(() => {
+      refreshRemoteRequestState();
+    })
+    .catch(() => {
+      // Keep the optimistic completion visible and let the next sync reconcile remote state.
+    });
   return completedRequest;
 }
 
@@ -823,7 +809,10 @@ export function createRequestDraft(input: {
     locationSource: input.locationSource,
     notes: input.notes.trim(),
     createdAt: new Date().toISOString(),
-    requesterId: currentActor?.role === "user" ? currentActor.id : currentActor?.id ?? null,
+    requesterId:
+      currentActor?.role === "user"
+        ? currentActor.id
+        : (currentActor?.id ?? null),
     requesterName: currentActor?.name || "Khách ResQ",
     requesterPhone: currentActor?.phone || "",
     fixerId: null,
@@ -849,7 +838,9 @@ export async function refreshResQStore(actorOverride?: StoreActor | null) {
     const supabase = createClient();
     const vehiclesQuery = supabase
       .from(VEHICLES_TABLE)
-      .select("id, owner_id, name, plate, year, type, is_default, created_at, updated_at")
+      .select(
+        "id, owner_id, name, plate, year, type, is_default, created_at, updated_at",
+      )
       .eq("owner_id", actor.id)
       .order("is_default", { ascending: false })
       .order("created_at", { ascending: false });
@@ -868,7 +859,7 @@ export async function refreshResQStore(actorOverride?: StoreActor | null) {
             .from(REQUESTS_TABLE)
             .select("*")
             .eq("fixer_id", actor.id)
-            .not("status", "in", "(\"Hoàn thành\",\"Đã hủy\")")
+            .not("status", "in", '("Hoàn thành","Đã hủy")')
             .order("created_at", { ascending: false })
             .limit(1),
           supabase
@@ -881,7 +872,9 @@ export async function refreshResQStore(actorOverride?: StoreActor | null) {
 
       if (vehiclesResult.data) {
         currentVehicles = normalizeVehicles(
-          vehiclesResult.data.map((record) => mapVehicleRecordToVehicle(record as VehicleRecord)),
+          vehiclesResult.data.map((record) =>
+            mapVehicleRecordToVehicle(record as VehicleRecord),
+          ),
         );
       }
 
@@ -912,7 +905,7 @@ export async function refreshResQStore(actorOverride?: StoreActor | null) {
           .from(REQUESTS_TABLE)
           .select("*")
           .eq("requester_id", actor.id)
-          .not("status", "in", "(\"Hoàn thành\",\"Đã hủy\")")
+          .not("status", "in", '("Hoàn thành","Đã hủy")')
           .order("created_at", { ascending: false })
           .limit(1),
         supabase
@@ -925,7 +918,9 @@ export async function refreshResQStore(actorOverride?: StoreActor | null) {
 
       if (vehiclesResult.data) {
         currentVehicles = normalizeVehicles(
-          vehiclesResult.data.map((record) => mapVehicleRecordToVehicle(record as VehicleRecord)),
+          vehiclesResult.data.map((record) =>
+            mapVehicleRecordToVehicle(record as VehicleRecord),
+          ),
         );
       }
 

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import type { ResQAuthRole } from "@/utils/supabase/auth";
 import { createClient } from "@/utils/supabase/client";
+import { sendWorkflowRequestMessage } from "@/utils/supabase/requestWorkflow";
 
 export type RequestChatSenderRole = ResQAuthRole | "system";
 
@@ -56,7 +57,9 @@ function loadLocalRequestChatMessages(requestId: string | null) {
   }
 
   try {
-    const rawValue = window.localStorage.getItem(getRequestChatStorageKey(requestId));
+    const rawValue = window.localStorage.getItem(
+      getRequestChatStorageKey(requestId),
+    );
     if (!rawValue) {
       return [];
     }
@@ -68,13 +71,19 @@ function loadLocalRequestChatMessages(requestId: string | null) {
 
     return parsedValue
       .filter((message) => message && message.requestId === requestId)
-      .sort((left, right) => Date.parse(left.createdAt) - Date.parse(right.createdAt));
+      .sort(
+        (left, right) =>
+          Date.parse(left.createdAt) - Date.parse(right.createdAt),
+      );
   } catch {
     return [];
   }
 }
 
-function saveLocalRequestChatMessages(requestId: string, messages: RequestChatMessage[]) {
+function saveLocalRequestChatMessages(
+  requestId: string,
+  messages: RequestChatMessage[],
+) {
   if (typeof window === "undefined") {
     return;
   }
@@ -122,7 +131,9 @@ function appendLocalRequestChatMessage(input: {
 async function fetchRemoteRequestChatMessages(requestId: string) {
   const { data, error } = await createClient()
     .from(REQUEST_CHAT_TABLE)
-    .select("id, request_id, sender_id, sender_name, sender_role, body, created_at")
+    .select(
+      "id, request_id, sender_id, sender_name, sender_role, body, created_at",
+    )
     .eq("request_id", requestId)
     .order("created_at", { ascending: true });
 
@@ -145,17 +156,21 @@ async function sendRemoteRequestChatMessage(input: {
     return;
   }
 
-  const { error } = await createClient().from(REQUEST_CHAT_TABLE).insert({
-    request_id: input.requestId,
-    sender_id: input.senderId ?? null,
-    sender_name: input.senderName.trim() || "ResQ",
-    sender_role: input.senderRole,
+  if (input.senderRole === "system") {
+    appendLocalRequestChatMessage({
+      requestId: input.requestId,
+      senderId: null,
+      senderName: "ResQ",
+      senderRole: "system",
+      body: nextBody,
+    });
+    return;
+  }
+
+  await sendWorkflowRequestMessage({
+    requestId: input.requestId,
     body: nextBody,
   });
-
-  if (error) {
-    throw error;
-  }
 }
 
 export async function sendRequestChatMessage(input: {

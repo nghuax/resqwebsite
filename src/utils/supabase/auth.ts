@@ -68,7 +68,7 @@ export async function buildAuthUser(user: User): Promise<ResQAuthUser> {
     name,
     phone,
     email,
-    role: normalizeRole(profile?.role ?? metadata.role),
+    role: normalizeRole(profile?.role),
   };
 }
 

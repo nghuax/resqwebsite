@@ -226,7 +226,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         data: {
           full_name: input.name.trim(),
           phone: input.phone.trim(),
-          role: input.role,
         },
       },
     });
