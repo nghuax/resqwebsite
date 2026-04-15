@@ -3,6 +3,7 @@ import type { RealtimeChannel } from "@supabase/supabase-js";
 import type { ResQAuthRole } from "@/utils/supabase/auth";
 import { createClient } from "@/utils/supabase/client";
 import {
+  getBrowserGeolocationState,
   HO_CHI_MINH_CITY_FALLBACK,
   measureDistanceMeters,
   type GeoPoint,
@@ -376,7 +377,21 @@ export function useLiveRequestLocationSync(input: {
       return;
     }
 
-    if (!("geolocation" in navigator)) {
+    const geolocationState = getBrowserGeolocationState();
+
+    if (!geolocationState.supported) {
+      if (actorRole === "user" && fallbackUserPoint) {
+        void publishRequestLocation({
+          requestId,
+          actorId,
+          actorRole,
+          point: fallbackUserPoint,
+          source: "manual",
+          address: fallbackUserAddress ?? null,
+        }).catch(() => {
+          // Keep the request visible with the saved pickup point even without live GPS.
+        });
+      }
       return;
     }
 

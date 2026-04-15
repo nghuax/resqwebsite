@@ -6,13 +6,16 @@ import {
   Crosshair,
   LocateFixed,
   LoaderCircle,
+  LockKeyhole,
   Navigation,
 } from "lucide-react";
 import type { ResQAuthRole } from "@/utils/supabase/auth";
 import { useResolvedRequestLocations } from "./requestLocations";
 import {
+  buildSecureWebsiteUrl,
   createVehicleOrigin,
   fetchRouteData,
+  getBrowserGeolocationState,
   getTrackingStatus,
   HO_CHI_MINH_CITY_FALLBACK,
   measureDistanceMeters,
@@ -52,6 +55,18 @@ export function TrackingLiveMap({
   const [isRouting, setIsRouting] = useState(true);
   const [followVehicle, setFollowVehicle] = useState(true);
   const [remainingDistanceMeters, setRemainingDistanceMeters] = useState(0);
+  const geolocationState = useMemo(() => getBrowserGeolocationState(), []);
+  const secureWebsiteUrl = useMemo(() => {
+    if (typeof window === "undefined") {
+      return null;
+    }
+
+    return buildSecureWebsiteUrl(
+      window.location.pathname,
+      window.location.search,
+      window.location.hash,
+    );
+  }, []);
 
   const { locations, isLoading: isLoadingLocations } = useResolvedRequestLocations({
     requestId,
@@ -360,6 +375,37 @@ export function TrackingLiveMap({
                 <p className={`${mono} text-[15px] font-[500] text-[#080b0d]`}>
                   Đang lấy vị trí user và fixer...
                 </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {geolocationState.reason === "insecure-context" && (
+        <div className="pointer-events-none absolute inset-x-3 bottom-3 sm:left-6 sm:bottom-6 sm:right-auto sm:max-w-[420px]">
+          <div className="pointer-events-auto rounded-[18px] border border-[rgba(238,50,36,0.16)] bg-[rgba(255,247,245,0.96)] px-4 py-4 shadow-[0_18px_32px_rgba(8,11,13,0.12)] backdrop-blur-[14px]">
+            <div className="flex items-start gap-3">
+              <div className="mt-[2px] flex size-[30px] items-center justify-center rounded-full bg-[rgba(238,50,36,0.12)]">
+                <LockKeyhole size={14} className="text-[#ee3224]" />
+              </div>
+              <div className="min-w-0">
+                <p className={`${mono} text-[11px] uppercase tracking-[0.18em] text-[#ee3224]`}>
+                  GPS bị chặn trên bản HTTP
+                </p>
+                <p className={`${mono} mt-2 text-[12px] leading-[20px] text-[#4a5565]`}>
+                  Trình duyệt sẽ không cấp quyền vị trí trên domain public hiện tại. Mở bản HTTPS để
+                  theo dõi user và fixer bằng GPS thực.
+                </p>
+                {secureWebsiteUrl && (
+                  <a
+                    href={secureWebsiteUrl}
+                    className="mt-3 inline-flex h-[36px] items-center justify-center rounded-full bg-[#ee3224] px-4 no-underline transition-colors hover:bg-[#d42b1e]"
+                  >
+                    <span className={`${mono} text-[10px] uppercase tracking-[0.16em] text-white`}>
+                      Mở bản HTTPS
+                    </span>
+                  </a>
+                )}
               </div>
             </div>
           </div>

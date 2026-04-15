@@ -41,11 +41,93 @@ export const HO_CHI_MINH_CITY_FALLBACK: GeoPoint = {
   lng: 106.700806,
 };
 
+export const RESQ_SECURE_WEBSITE_URL = "https://resqwebsite-pi.vercel.app";
+
+export type BrowserGeolocationState = {
+  supported: boolean;
+  secure: boolean;
+  reason: "ok" | "unsupported" | "insecure-context";
+};
+
+export function getBrowserGeolocationState(): BrowserGeolocationState {
+  if (typeof window === "undefined") {
+    return {
+      supported: false,
+      secure: false,
+      reason: "unsupported",
+    };
+  }
+
+  const secure = window.isSecureContext;
+
+  if (!("geolocation" in navigator)) {
+    return {
+      supported: false,
+      secure,
+      reason: "unsupported",
+    };
+  }
+
+  if (!secure) {
+    return {
+      supported: false,
+      secure: false,
+      reason: "insecure-context",
+    };
+  }
+
+  return {
+    supported: true,
+    secure: true,
+    reason: "ok",
+  };
+}
+
+export function buildSecureWebsiteUrl(
+  pathname = "/",
+  search = "",
+  hash = "",
+) {
+  const normalizedPath =
+    pathname === "/resqwebsite"
+      ? "/"
+      : pathname.startsWith("/resqwebsite/")
+        ? pathname.replace(/^\/resqwebsite/, "")
+        : pathname;
+
+  const safePath = normalizedPath.startsWith("/") ? normalizedPath : `/${normalizedPath}`;
+
+  return `${RESQ_SECURE_WEBSITE_URL}${safePath}${search}${hash}`;
+}
+
+export function getSecureWebsiteRedirectTarget() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const hostname = window.location.hostname.toLowerCase();
+  const isLocalHost =
+    hostname === "localhost" ||
+    hostname === "127.0.0.1";
+
+  if (window.isSecureContext || isLocalHost) {
+    return null;
+  }
+
+  return buildSecureWebsiteUrl(
+    window.location.pathname,
+    window.location.search,
+    window.location.hash,
+  );
+}
+
 export async function getUserLocation(): Promise<{
   point: GeoPoint;
   source: LocationSource;
 }> {
-  if (typeof window === "undefined" || !("geolocation" in navigator)) {
+  const geolocationState = getBrowserGeolocationState();
+
+  if (!geolocationState.supported) {
     return {
       point: HO_CHI_MINH_CITY_FALLBACK,
       source: "fallback",

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type {
   Circle as LeafletCircle,
   Map as LeafletMap,
@@ -7,6 +7,8 @@ import type {
 import { Crosshair, LoaderCircle, MapPin } from "lucide-react";
 import {
   HO_CHI_MINH_CITY_FALLBACK,
+  buildSecureWebsiteUrl,
+  getBrowserGeolocationState,
   getUserLocation,
   measureDistanceMeters,
   type GeoPoint,
@@ -67,6 +69,18 @@ export function ServiceLocationPicker({
     source: "fallback",
     address: formatCoordinates(HO_CHI_MINH_CITY_FALLBACK),
   });
+  const geolocationState = useMemo(() => getBrowserGeolocationState(), []);
+  const secureWebsiteUrl = useMemo(() => {
+    if (typeof window === "undefined") {
+      return null;
+    }
+
+    return buildSecureWebsiteUrl(
+      window.location.pathname,
+      window.location.search,
+      window.location.hash,
+    );
+  }, []);
 
   useEffect(() => {
     onChangeRef.current = onChange;
@@ -175,8 +189,7 @@ export function ServiceLocationPicker({
       await locateUser(false);
 
       if (
-        typeof navigator !== "undefined" &&
-        "geolocation" in navigator &&
+        geolocationState.supported &&
         geolocationWatchRef.current === null
       ) {
         geolocationWatchRef.current = navigator.geolocation.watchPosition(
@@ -329,7 +342,7 @@ export function ServiceLocationPicker({
       mapRef.current?.remove();
       mapRef.current = null;
     };
-  }, []);
+  }, [geolocationState.supported]);
 
   const handleLocateMe = async () => {
     if (!mapRef.current) {
@@ -455,6 +468,33 @@ export function ServiceLocationPicker({
                 Đang xác định vị trí
               </span>
             </div>
+          </div>
+        </div>
+      )}
+
+      {geolocationState.reason !== "ok" && !isLocating && (
+        <div className="absolute inset-x-3 bottom-[96px] sm:inset-x-4 sm:bottom-[108px]">
+          <div className="rounded-[16px] border border-[rgba(238,50,36,0.16)] bg-[rgba(255,247,245,0.96)] px-4 py-3 shadow-[0_14px_28px_rgba(8,11,13,0.08)] backdrop-blur-[14px]">
+            <p className={`${mono} text-[11px] uppercase tracking-[0.16em] text-[#ee3224]`}>
+              {geolocationState.reason === "insecure-context"
+                ? "Bản public hiện không ở chế độ HTTPS"
+                : "Trình duyệt này chưa hỗ trợ định vị"}
+            </p>
+            <p className={`${mono} mt-2 text-[11px] leading-[18px] text-[#4a5565]`}>
+              {geolocationState.reason === "insecure-context"
+                ? "Browser sẽ không hiển thị hộp xin quyền vị trí trên bản HTTP. Hãy mở bản HTTPS để ResQ lấy GPS và theo dõi fixer trực tiếp."
+                : "ResQ sẽ dùng vị trí dự phòng cho đến khi trình duyệt hỗ trợ quyền truy cập định vị."}
+            </p>
+            {geolocationState.reason === "insecure-context" && secureWebsiteUrl && (
+              <a
+                href={secureWebsiteUrl}
+                className="mt-3 inline-flex h-[36px] items-center justify-center rounded-full bg-[#ee3224] px-4 no-underline transition-colors hover:bg-[#d42b1e]"
+              >
+                <span className={`${mono} text-[10px] uppercase tracking-[0.16em] text-white`}>
+                  Mở bản HTTPS
+                </span>
+              </a>
+            )}
           </div>
         </div>
       )}
