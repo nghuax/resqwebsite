@@ -16,7 +16,11 @@ import {
   AlertCircle,
   Shield,
 } from "lucide-react";
-import { useResQStore, type ActiveResQRequest } from "./resqStore";
+import {
+  useResQStore,
+  type ActiveResQRequest,
+  type ResQHistoryItem,
+} from "./resqStore";
 import { HO_CHI_MINH_CITY_FALLBACK } from "./tracking/tracking-utils";
 
 const mono = "font-['IBM_Plex_Mono',monospace]";
@@ -57,13 +61,51 @@ const fallbackRequest: ActiveResQRequest = {
   status: "Đang tiếp cận",
 };
 
+type PaymentRequest = ActiveResQRequest | ResQHistoryItem;
+
 function formatVND(value: number) {
   return value.toLocaleString("vi-VN") + "đ";
 }
 
+function resolvePaymentRequest(
+  activeRequest: ActiveResQRequest | null,
+  requestHistory: ResQHistoryItem[],
+) {
+  if (activeRequest) {
+    return activeRequest;
+  }
+
+  return (
+    requestHistory.find((item) => item.status !== "Đã hủy")
+    ?? requestHistory[0]
+    ?? null
+  );
+}
+
+function getFixerDisplayName(request: PaymentRequest) {
+  return request.fixerName?.trim() || request.fixerTeam?.trim() || "Fixer ResQ";
+}
+
+function getFixerInitials(name: string) {
+  const words = name
+    .split(/\s+/)
+    .map((word) => word.trim())
+    .filter(Boolean);
+
+  if (words.length === 0) {
+    return "RQ";
+  }
+
+  return words
+    .slice(0, 2)
+    .map((word) => word[0]?.toUpperCase() ?? "")
+    .join("");
+}
+
 export default function PaymentPage() {
-  const { activeRequest, completeActiveRequest } = useResQStore();
-  const request = activeRequest ?? fallbackRequest;
+  const { activeRequest, requestHistory, completeActiveRequest, isHydrating } =
+    useResQStore();
+  const request = resolvePaymentRequest(activeRequest, requestHistory);
   const [selected, setSelected] = useState("momo");
   const [coupon, setCoupon] = useState("RESQ10K");
   const [applied, setApplied] = useState(true);
@@ -89,6 +131,54 @@ export default function PaymentPage() {
   )
     .toString()
     .padStart(2, "0")}/${now.getFullYear()}`;
+
+  if (isHydrating && !request) {
+    return (
+      <div className="overflow-x-hidden bg-white">
+        <div className={`${pagePadding} py-12`}>
+          <div className="mx-auto flex min-h-[60vh] max-w-[420px] flex-col items-center justify-center text-center">
+            <Loader2 size={48} className="mb-[20px] animate-spin text-[#ee3224]" />
+            <h2 className={`${mono} text-[22px] font-[700] text-[#080b0d]`}>
+              Đang tải chi tiết thanh toán
+            </h2>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!request) {
+    return (
+      <div className="overflow-x-hidden bg-white">
+        <div className={`${pagePadding} py-12`}>
+          <div className="mx-auto flex min-h-[60vh] max-w-[520px] flex-col items-center justify-center text-center">
+            <div className="mb-[20px] flex size-[72px] items-center justify-center rounded-full bg-[rgba(238,50,36,0.08)]">
+              <CreditCard size={34} className="text-[#ee3224]" />
+            </div>
+            <h2 className={`${mono} mb-[8px] text-[24px] font-[700] text-[#080b0d]`}>
+              Chưa có đơn sẵn sàng để thanh toán
+            </h2>
+            <p className={`${mono} mb-[24px] max-w-[420px] text-[14px] leading-[24px] text-[#4a5565]`}>
+              ResQ sẽ hiển thị đúng fixer và chi tiết đơn ngay khi yêu cầu của bạn
+              bước sang giai đoạn cần thanh toán.
+            </p>
+            <Link
+              to="/theo-doi"
+              className="inline-flex h-[48px] items-center justify-center rounded-[10px] bg-[#ee3224] px-[28px] no-underline transition-colors hover:bg-[#d42b1e]"
+            >
+              <span className={`${mono} text-[14px] font-[500] text-white`}>
+                Quay về Theo Dõi
+              </span>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const fixerDisplayName = getFixerDisplayName(request);
+  const fixerInitials = getFixerInitials(fixerDisplayName);
+  const fixerMeta = request.fixerTeam?.trim() || request.fixerVehicle?.trim() || "Fixer ResQ";
 
   useEffect(() => {
     if (step === "processing") {
@@ -270,7 +360,8 @@ export default function PaymentPage() {
                 {[
                   ["Dịch vụ", request.serviceTitle],
                   ["Xe", `${request.vehicleName} · ${request.vehiclePlate}`],
-                  ["Fixer", request.fixerTeam],
+                  ["Fixer", fixerDisplayName],
+                  ["Đội hỗ trợ", fixerMeta],
                   ["Phương thức", paymentMethods.find((method) => method.id === selected)?.name || ""],
                 ].map(([key, value]) => (
                   <div key={key} className="flex justify-between gap-3">
@@ -285,7 +376,7 @@ export default function PaymentPage() {
               <div className="space-y-[8px] border-t border-[rgba(4,38,153,0.08)] pt-[12px]">
                 <div className="flex justify-between gap-3">
                   <span className={`${mono} text-[13px] text-[#080b0d]`}>
-                    Vá lốp xe máy
+                    {request.serviceTitle}
                   </span>
                   <span className={`${mono} text-[13px] font-[500] text-[#080b0d]`}>
                     {formatVND(SERVICE_FEE)}
@@ -327,15 +418,15 @@ export default function PaymentPage() {
               <div className="mb-[16px] flex items-center gap-[12px]">
                 <div className="flex size-[44px] shrink-0 items-center justify-center rounded-full bg-[#ee3224]">
                   <span className={`${mono} text-[14px] font-[500] text-white`}>
-                    TM
+                    {fixerInitials}
                   </span>
                 </div>
                 <div>
                   <p className={`${mono} text-[14px] font-[500] text-[#080b0d]`}>
-                    Trần Văn Minh
+                    {fixerDisplayName}
                   </p>
                   <p className={`${mono} text-[12px] text-[#a4a4a4]`}>
-                    Fixer · 127 đơn hoàn thành
+                    {fixerMeta}
                   </p>
                 </div>
               </div>
@@ -761,18 +852,18 @@ export default function PaymentPage() {
                 </div>
 
                 <div className="mb-[16px] flex items-center gap-[12px] border-b border-[rgba(4,38,153,0.08)] pb-[16px]">
-                  <div className="flex size-[44px] items-center justify-center rounded-full bg-[#ee3224]">
-                    <span className={`${mono} text-[14px] font-[500] text-white`}>
-                      TM
+                <div className="flex size-[44px] items-center justify-center rounded-full bg-[#ee3224]">
+                  <span className={`${mono} text-[14px] font-[500] text-white`}>
+                      {fixerInitials}
                     </span>
                   </div>
                   <div>
                     <p className={`${mono} text-[14px] font-[500] text-[#080b0d]`}>
-                      {request.fixerTeam}
+                      {fixerDisplayName}
                     </p>
                     <div className="flex items-center gap-[4px]">
                       <span className={`${mono} text-[12px] text-[#a4a4a4]`}>
-                        Fixer ·
+                        {fixerMeta} ·
                       </span>
                       <Star size={12} className="fill-[#ee3224] text-[#ee3224]" />
                       <span className={`${mono} text-[12px] text-[#a4a4a4]`}>
