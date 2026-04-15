@@ -316,7 +316,7 @@ export function TrackingLiveMap({
     <div className="relative isolate overflow-hidden rounded-[20px] border border-[rgba(4,38,153,0.08)] bg-white shadow-[0_18px_50px_rgba(8,11,13,0.08)]">
       <div
         ref={mapElementRef}
-        className="h-[500px] w-full max-w-full bg-[#e9edf1] sm:h-[580px] lg:h-[640px]"
+        className="h-[360px] w-full max-w-full bg-[#e9edf1] sm:h-[500px] lg:h-[640px]"
       />
 
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.54),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.24),transparent_24%,transparent_70%,rgba(8,11,13,0.12)_100%)]" />
@@ -327,7 +327,7 @@ export function TrackingLiveMap({
         </span>
       </div>
 
-      <div className="pointer-events-none absolute right-3 top-14 flex flex-col gap-3 sm:right-6 sm:top-6">
+      <div className="pointer-events-none absolute bottom-3 right-3 flex flex-col gap-3 sm:bottom-auto sm:right-6 sm:top-6">
         <MapActionButton
           active={false}
           icon={<LocateFixed size={16} />}

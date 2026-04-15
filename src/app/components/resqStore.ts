@@ -8,6 +8,7 @@ import {
   cancelServiceRequest as cancelServiceRequestRemote,
   completeServiceRequest as completeServiceRequestRemote,
   createServiceRequest as createServiceRequestRemote,
+  loadWorkflowLiveState,
 } from "@/utils/supabase/requestWorkflow";
 import {
   HO_CHI_MINH_CITY_FALLBACK,
@@ -437,6 +438,16 @@ function mapVehicleToRecord(vehicle: ResQVehicle): VehicleRecord | null {
   };
 }
 
+function resolveVehiclesFromRemote(records?: VehicleRecord[] | null) {
+  if (!records || records.length === 0) {
+    return normalizeVehicles(currentVehicles);
+  }
+
+  return normalizeVehicles(
+    records.map((record) => mapVehicleRecordToVehicle(record)),
+  );
+}
+
 function mapRequestRecordToRequest(record: RequestRecord): ActiveResQRequest {
   return normalizeRequest({
     id: record.id,
@@ -469,7 +480,7 @@ function mapRequestRecordToRequest(record: RequestRecord): ActiveResQRequest {
 
 async function persistVehiclesSnapshot(nextVehicles: ResQVehicle[]) {
   if (!currentActor?.id) {
-    return;
+    return false;
   }
 
   const rows = nextVehicles
@@ -480,7 +491,13 @@ async function persistVehiclesSnapshot(nextVehicles: ResQVehicle[]) {
     const supabase = createClient();
 
     if (rows.length > 0) {
-      await supabase.from(VEHICLES_TABLE).upsert(rows, { onConflict: "id" });
+      const { error: upsertError } = await supabase
+        .from(VEHICLES_TABLE)
+        .upsert(rows, { onConflict: "id" });
+
+      if (upsertError) {
+        return false;
+      }
     }
 
     let deleteQuery = supabase
@@ -493,9 +510,16 @@ async function persistVehiclesSnapshot(nextVehicles: ResQVehicle[]) {
       deleteQuery = deleteQuery.not("id", "in", `(${keepIds})`);
     }
 
-    await deleteQuery;
+    const { error: deleteError } = await deleteQuery;
+
+    if (deleteError) {
+      return false;
+    }
+
+    return true;
   } catch {
     // Keep the local state usable even if the remote sync fails.
+    return false;
   }
 }
 
@@ -585,7 +609,11 @@ export function addVehicle(input: AddVehicleInput) {
 
   currentVehicles = normalizeVehicles([...currentVehicles, nextVehicle]);
   emitChange();
-  void persistVehiclesSnapshot(currentVehicles);
+  void persistVehiclesSnapshot(currentVehicles).then((didSync) => {
+    if (didSync && currentActor) {
+      void refreshResQStore(currentActor);
+    }
+  });
   return nextVehicle;
 }
 
@@ -597,7 +625,11 @@ export function setDefaultVehicle(vehicleId: string) {
     })),
   );
   emitChange();
-  void persistVehiclesSnapshot(currentVehicles);
+  void persistVehiclesSnapshot(currentVehicles).then((didSync) => {
+    if (didSync && currentActor) {
+      void refreshResQStore(currentActor);
+    }
+  });
 }
 
 export function removeVehicle(vehicleId: string) {
@@ -605,7 +637,11 @@ export function removeVehicle(vehicleId: string) {
     currentVehicles.filter((vehicle) => vehicle.id !== vehicleId),
   );
   emitChange();
-  void persistVehiclesSnapshot(currentVehicles);
+  void persistVehiclesSnapshot(currentVehicles).then((didSync) => {
+    if (didSync && currentActor) {
+      void refreshResQStore(currentActor);
+    }
+  });
 }
 
 export function setActiveRequest(request: ActiveResQRequest) {
@@ -844,95 +880,54 @@ export async function refreshResQStore(actorOverride?: StoreActor | null) {
       .eq("owner_id", actor.id)
       .order("is_default", { ascending: false })
       .order("created_at", { ascending: false });
+    const [vehiclesResult, workflowState] = await Promise.all([
+      vehiclesQuery,
+      loadWorkflowLiveState(),
+    ]);
 
     if (actor.role === "fixer") {
-      const [vehiclesResult, incomingResult, activeResult, historyResult] =
-        await Promise.all([
-          vehiclesQuery,
-          supabase
-            .from(REQUESTS_TABLE)
-            .select("*")
-            .eq("status", "Chờ fixer xác nhận")
-            .order("created_at", { ascending: false })
-            .limit(12),
-          supabase
-            .from(REQUESTS_TABLE)
-            .select("*")
-            .eq("fixer_id", actor.id)
-            .not("status", "in", '("Hoàn thành","Đã hủy")')
-            .order("created_at", { ascending: false })
-            .limit(1),
-          supabase
-            .from(REQUESTS_TABLE)
-            .select("*")
-            .eq("fixer_id", actor.id)
-            .order("created_at", { ascending: false })
-            .limit(12),
-        ]);
-
-      if (vehiclesResult.data) {
-        currentVehicles = normalizeVehicles(
-          vehiclesResult.data.map((record) =>
-            mapVehicleRecordToVehicle(record as VehicleRecord),
-          ),
+      if (!vehiclesResult.error && vehiclesResult.data) {
+        currentVehicles = resolveVehiclesFromRemote(
+          vehiclesResult.data as VehicleRecord[],
         );
       }
 
-      if (incomingResult.data) {
+      if (Array.isArray(workflowState.pending_requests)) {
         currentIncomingRequests = normalizeIncomingRequests(
-          incomingResult.data.map((record) =>
+          workflowState.pending_requests.map((record) =>
             mapRequestRecordToRequest(record as RequestRecord),
           ),
         );
       }
 
       currentActiveRequest =
-        activeResult.data && activeResult.data.length > 0
-          ? mapRequestRecordToRequest(activeResult.data[0] as RequestRecord)
+        workflowState.active_request
+          ? mapRequestRecordToRequest(workflowState.active_request as RequestRecord)
           : null;
 
-      if (historyResult.data) {
+      if (Array.isArray(workflowState.request_history)) {
         currentRequestHistory = normalizeHistory(
-          historyResult.data.map((record) =>
+          workflowState.request_history.map((record) =>
             toHistoryItem(mapRequestRecordToRequest(record as RequestRecord)),
           ),
         );
       }
     } else {
-      const [vehiclesResult, activeResult, historyResult] = await Promise.all([
-        vehiclesQuery,
-        supabase
-          .from(REQUESTS_TABLE)
-          .select("*")
-          .eq("requester_id", actor.id)
-          .not("status", "in", '("Hoàn thành","Đã hủy")')
-          .order("created_at", { ascending: false })
-          .limit(1),
-        supabase
-          .from(REQUESTS_TABLE)
-          .select("*")
-          .eq("requester_id", actor.id)
-          .order("created_at", { ascending: false })
-          .limit(12),
-      ]);
-
-      if (vehiclesResult.data) {
-        currentVehicles = normalizeVehicles(
-          vehiclesResult.data.map((record) =>
-            mapVehicleRecordToVehicle(record as VehicleRecord),
-          ),
+      if (!vehiclesResult.error && vehiclesResult.data) {
+        currentVehicles = resolveVehiclesFromRemote(
+          vehiclesResult.data as VehicleRecord[],
         );
       }
 
       currentIncomingRequests = [];
       currentActiveRequest =
-        activeResult.data && activeResult.data.length > 0
-          ? mapRequestRecordToRequest(activeResult.data[0] as RequestRecord)
+        workflowState.active_request
+          ? mapRequestRecordToRequest(workflowState.active_request as RequestRecord)
           : null;
 
-      if (historyResult.data) {
+      if (Array.isArray(workflowState.request_history)) {
         currentRequestHistory = normalizeHistory(
-          historyResult.data.map((record) =>
+          workflowState.request_history.map((record) =>
             toHistoryItem(mapRequestRecordToRequest(record as RequestRecord)),
           ),
         );

@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { TrackingLiveMap } from "../tracking/TrackingLiveMap";
 import { useLiveRequestLocationSync } from "../tracking/requestLocations";
+import { RequestStatusFeedCard } from "../tracking/RequestStatusFeedCard";
 import { getServiceProgress } from "../tracking/request-progress";
 import { RequestChatPanel } from "../tracking/RequestChatPanel";
 import {
@@ -234,6 +235,8 @@ function MobileUserActivityPage() {
               })}
             </div>
           </section>
+
+          <RequestStatusFeedCard requestId={liveRequest.id} compact />
 
           {!isWaitingForFixerConfirmation && (
             <section className="rounded-[22px] bg-[#111111] px-4 py-4 text-white shadow-[0_18px_40px_rgba(8,11,13,0.16)]">
@@ -604,6 +607,8 @@ function MobileFixerActivityPage() {
             actorRole="fixer"
             compact
           />
+
+          <RequestStatusFeedCard requestId={activeRequest.id} compact />
 
           {incomingRequests.length > 0 && (
             <section className="rounded-[26px] bg-white/92 p-4 shadow-[0_18px_40px_rgba(8,11,13,0.06)]">

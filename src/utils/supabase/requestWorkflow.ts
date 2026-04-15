@@ -43,6 +43,32 @@ export type WorkflowMessageRow = {
   created_at: string;
 };
 
+export type WorkflowStatusEventRow = {
+  id: string;
+  request_id: string;
+  actor_id: string | null;
+  actor_role: "user" | "fixer" | "system";
+  event_type: "created" | "accepted" | "progressed" | "completed" | "cancelled";
+  status:
+    | "Chờ fixer xác nhận"
+    | "Fixer đã xác nhận"
+    | "Đang tiếp cận"
+    | "Đang hỗ trợ"
+    | "Hoàn thành"
+    | "Đã hủy";
+  detail: string | null;
+  created_at: string;
+};
+
+export type WorkflowLiveState = {
+  actor_role: "user" | "fixer";
+  active_request: WorkflowRequestRow | null;
+  pending_requests: WorkflowRequestRow[];
+  request_history: WorkflowRequestRow[];
+  fixer_approval_status?: "pending" | "approved" | "suspended" | null;
+  fixer_is_available?: boolean | null;
+};
+
 function unwrapSingleRow<T>(value: T | T[] | null) {
   if (Array.isArray(value)) {
     return value[0] ?? null;
@@ -150,4 +176,37 @@ export async function sendWorkflowRequestMessage(input: {
   return unwrapSingleRow(
     data as WorkflowMessageRow | WorkflowMessageRow[] | null,
   );
+}
+
+export async function loadWorkflowLiveState() {
+  const { data, error } = await createClient().rpc("load_live_request_state");
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? {
+    actor_role: "user",
+    active_request: null,
+    pending_requests: [],
+    request_history: [],
+    fixer_approval_status: null,
+    fixer_is_available: null,
+  }) as WorkflowLiveState;
+}
+
+export async function listWorkflowRequestStatusEvents(requestId: string) {
+  if (!requestId) {
+    return [];
+  }
+
+  const { data, error } = await createClient().rpc("list_request_status_events", {
+    p_request_id: requestId,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? []) as WorkflowStatusEventRow[];
 }

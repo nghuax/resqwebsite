@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { TrackingLiveMap } from "./tracking/TrackingLiveMap";
 import { useLiveRequestLocationSync } from "./tracking/requestLocations";
+import { RequestStatusFeedCard } from "./tracking/RequestStatusFeedCard";
 import {
   advanceActiveRequestStatus,
   confirmIncomingRequest,
@@ -498,6 +499,10 @@ function UserTrackingPage() {
                 </div>
 
                 <div className="mt-5">
+                  <RequestStatusFeedCard requestId={request.id} />
+                </div>
+
+                <div className="mt-5">
                   {isWaitingForFixerConfirmation ? (
                     <div className="rounded-[18px] border border-dashed border-[rgba(4,38,153,0.12)] bg-[#faf8f5] px-5 py-5">
                       <p className={`${mono} text-[12px] uppercase tracking-[0.16em] text-[#99a1af]`}>
@@ -739,6 +744,10 @@ function FixerTrackingPage() {
                         Gọi khách hàng
                       </span>
                     </a>
+                  </div>
+
+                  <div className="mt-5">
+                    <RequestStatusFeedCard requestId={activeRequest.id} />
                   </div>
 
                   <div className="mt-5">
