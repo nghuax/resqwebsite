@@ -163,11 +163,11 @@ export default function PaymentPage() {
               bước sang giai đoạn cần thanh toán.
             </p>
             <Link
-              to="/theo-doi"
+              to="/dich-vu?panel=tracking"
               className="inline-flex h-[48px] items-center justify-center rounded-[10px] bg-[#ee3224] px-[28px] no-underline transition-colors hover:bg-[#d42b1e]"
             >
               <span className={`${mono} text-[14px] font-[500] text-white`}>
-                Quay về Theo Dõi
+                Mở panel theo dõi
               </span>
             </Link>
           </div>
@@ -723,10 +723,10 @@ export default function PaymentPage() {
       <div className={`${pagePadding} pt-8 pb-16 sm:pt-10 sm:pb-20`}>
         <div className={pageShell}>
           <Link
-            to="/theo-doi"
+            to="/dich-vu?panel=tracking"
             className={`mb-[16px] inline-flex items-center gap-[4px] text-[13px] font-[500] text-[#a4a4a4] no-underline transition-colors hover:text-[#080b0d] ${mono}`}
           >
-            <ChevronLeft size={16} /> Quay lại
+            <ChevronLeft size={16} /> Quay lại panel theo dõi
           </Link>
 
           <div className="mb-8 max-w-[620px]">

@@ -1,8 +1,8 @@
 import { Link } from "react-router";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { ResQLogoShowcase } from "./ResQLogoShowcase";
+import { useLanguage } from "./LanguageContext";
 
-const mono = "font-['IBM_Plex_Mono',monospace]";
 const pagePadding = "px-5 sm:px-8 lg:px-[84px] xl:px-[120px]";
 const pageShell = "mx-auto w-full max-w-[1240px]";
 
@@ -11,131 +11,106 @@ const IMG_REPAIR =
 const IMG_FUEL =
   "https://images.unsplash.com/photo-1711376643436-ab5e03732c75?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmdWVsJTIwZGVsaXZlcnklMjBnYXNvbGluZSUyMGNhbmlzdGVyfGVufDF8fHx8MTc3NTExNjc3NXww&ixlib=rb-4.1.0&q=80&w=1080";
 
-const stories = [
-  {
-    title: "Sửa xe tận nơi",
-    image: IMG_REPAIR,
-    alt: "Sửa xe tận nơi",
-    reverse: false,
-    body: [
-      "Đội ngũ thợ sửa xe chuyên nghiệp của chúng tôi sẽ đến ngay vị trí của bạn trong thời gian nhanh nhất. Từ vá lốp, thay ắc quy đến sửa chữa động cơ, tất cả đều được xử lý tại chỗ.",
-      "Với đội ngũ thợ được đào tạo bài bản và trang bị đầy đủ dụng cụ, chúng tôi cam kết mang đến dịch vụ sửa chữa nhanh chóng, an toàn và đáng tin cậy.",
-    ],
-  },
-  {
-    title: "Giao xăng tận nơi",
-    image: IMG_FUEL,
-    alt: "Giao xăng tận nơi",
-    reverse: true,
-    body: [
-      "Hết xăng giữa đường? Không cần lo lắng. ResQ sẽ giao xăng hoặc dầu diesel đến ngay vị trí của bạn chỉ trong 15-25 phút.",
-      "Dịch vụ giao nhiên liệu hoạt động 24/7, giúp bạn tiếp tục hành trình mà không bị gián đoạn, kể cả trong các tình huống khẩn cấp hoặc đêm khuya.",
-    ],
-  },
-];
-
 export default function AboutPage() {
+  const { language } = useLanguage();
+  const isEnglish = language === "en";
+
+  const stories = [
+    {
+      title: isEnglish ? "Built for urgent roadside moments" : "Thiết kế cho những phút căng thẳng trên đường",
+      image: IMG_REPAIR,
+      alt: isEnglish ? "Roadside repair" : "Sửa xe tận nơi",
+      reverse: false,
+      body: isEnglish
+        ? [
+            "ResQ was shaped around the moment when someone is already under pressure. That means less menu noise, fewer highlighted buttons, and faster decisions.",
+            "The product keeps the important context close: vehicle, pinned location, service type, live tracking, and the numbers people may need in a real emergency.",
+          ]
+        : [
+            "ResQ được thiết kế từ khoảnh khắc người dùng đã bắt đầu căng thẳng. Vì vậy giao diện ưu tiên ít nhiễu hơn, ít nút nổi bật hơn và ra quyết định nhanh hơn.",
+            "Sản phẩm giữ những gì quan trọng ở gần nhau: xe đã chọn, vị trí ghim, loại hỗ trợ, theo dõi trực tiếp và các đầu số cần dùng khi thật sự khẩn cấp.",
+          ],
+    },
+    {
+      title: isEnglish ? "Local dispatch, not generic assistance" : "Điều phối địa phương, không phải hỗ trợ chung chung",
+      image: IMG_FUEL,
+      alt: isEnglish ? "Fuel delivery" : "Tiếp nhiên liệu",
+      reverse: true,
+      body: isEnglish
+        ? [
+            "The service mix is tuned for Vietnam-first roadside problems: motorbikes, cars, flat tires, fuel delivery, battery issues, towing, and fast local routing.",
+            "We also shortened the story for both sides of the job: users start a request in fewer steps, while fixers receive cleaner request details and confirm faster.",
+          ]
+        : [
+            "Danh mục dịch vụ được tinh chỉnh cho bối cảnh giao thông tại Việt Nam: xe máy, ô tô, vá lốp, tiếp nhiên liệu, ắc quy, kéo xe và điều phối nhanh theo địa phương.",
+            "Chúng tôi cũng rút ngắn câu chuyện ở cả hai phía của đơn hàng: người dùng tạo yêu cầu ít bước hơn, còn fixer nhận đủ thông tin và xác nhận nhanh hơn.",
+          ],
+    },
+  ];
+
   return (
     <div className="overflow-x-hidden bg-white">
-      <section className={`${pagePadding} pt-10 pb-12 sm:pt-14 sm:pb-14 lg:pt-[80px] lg:pb-[60px]`}>
+      <section className={`${pagePadding} pb-12 pt-10 sm:pb-14 sm:pt-14 lg:pb-[60px] lg:pt-[76px]`}>
         <div className={`${pageShell} flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between`}>
-          <div className="max-w-[560px]">
-            <p className={`${mono} mb-4 text-[12px] font-[500] uppercase tracking-[1.8px] text-[#ee3224] sm:text-[13px]`}>
-              Về ResQ
+          <div className="max-w-[620px]">
+            <p className="resq-eyebrow text-[#ee3224]">
+              {isEnglish ? "About ResQ" : "Về ResQ"}
             </p>
-            <h1 className={`${mono} mb-5 text-[36px] font-[700] leading-[1.12] text-[#080b0d] sm:text-[44px] lg:text-[48px] lg:leading-[67px]`}>
-              Xe của bạn,
-              <br />
-              Việc của tôi.
+            <h1 className="resq-display mt-4 text-[44px] leading-[0.92] font-[700] text-[#080b0d] sm:text-[58px]">
+              {isEnglish ? "Your vehicle. Clear next step." : "Xe của bạn. Bước tiếp theo rõ ràng."}
             </h1>
-            <p className={`${mono} max-w-[500px] text-[14px] leading-[24px] text-[#4a5565] sm:text-[15px]`}>
-              ResQ kết nối cứu hộ, tiếp nhiên liệu, lưu phương tiện, định vị hiện
-              trường và theo dõi fixer trong một giao diện tiếng Việt gọn gàng,
-              ưu tiên trải nghiệm di động.
+            <p className="resq-body mt-5 max-w-[540px] text-[17px] leading-[28px] text-[#4e5766]">
+              {isEnglish
+                ? "ResQ combines request creation, live tracking, local dispatch, payments, and emergency references in one calmer interface."
+                : "ResQ kết nối tạo yêu cầu, theo dõi trực tiếp, điều phối địa phương, thanh toán và tham chiếu khẩn cấp vào cùng một giao diện gọn gàng hơn."}
             </p>
           </div>
           <ResQLogoShowcase className="min-h-[300px] w-full lg:min-h-[321px] lg:max-w-[703px]" />
         </div>
       </section>
 
-      <section className={`${pagePadding} py-8 sm:py-10 lg:py-[40px]`}>
-        <div className={`${pageShell} max-w-[820px]`}>
-          <h2 className={`${mono} mb-6 text-[32px] font-[700] text-[#080b0d] sm:text-[40px] lg:text-[48px]`}>
-            Về chúng tôi
-          </h2>
-          <div className={`${mono} space-y-4 text-[14px] leading-[24px] text-[#080b0d]`}>
-            <p>
-              Chúng tôi là đội ngũ chuyên cung cấp dịch vụ sửa xe tận nơi, được
-              thành lập với mong muốn mang lại sự tiện lợi, nhanh chóng và an tâm
-              cho mọi khách hàng khi xe gặp sự cố.
-            </p>
-            <p>
-              Trong cuộc sống bận rộn ngày nay, việc xe hỏng giữa đường hay không
-              thể di chuyển đến tiệm sửa chữa là điều không ai mong muốn. Hiểu được
-              điều đó, chúng tôi mang dịch vụ sửa chữa chuyên nghiệp đến ngay nơi
-              bạn cần, dù bạn đang ở nhà, nơi làm việc hay trên đường.
-            </p>
-          </div>
-        </div>
-      </section>
-
       {stories.map((story) => (
-        <section
-          key={story.title}
-          className={`${pagePadding} py-8 sm:py-10 lg:py-[40px]`}
-        >
+        <section key={story.title} className={`${pagePadding} py-8 sm:py-10 lg:py-[44px]`}>
           <div
             className={`${pageShell} flex flex-col gap-8 lg:items-center lg:gap-[64px] ${
               story.reverse ? "lg:flex-row-reverse" : "lg:flex-row"
             }`}
           >
-            <div className="h-[280px] w-full overflow-hidden rounded-[18px] sm:h-[340px] lg:h-[321px] lg:max-w-[580px]">
-              <ImageWithFallback
-                src={story.image}
-                alt={story.alt}
-                className="h-full w-full object-cover"
-              />
+            <div className="h-[300px] w-full overflow-hidden rounded-[24px] sm:h-[360px] lg:h-[340px] lg:max-w-[580px]">
+              <ImageWithFallback src={story.image} alt={story.alt} className="h-full w-full object-cover" />
             </div>
             <div className="flex-1">
-              <h2 className={`${mono} mb-6 text-[32px] font-[700] text-[#080b0d] sm:text-[40px] lg:text-[48px]`}>
+              <h2 className="resq-display text-[34px] leading-[0.95] font-[700] text-[#080b0d] sm:text-[42px]">
                 {story.title}
               </h2>
-              <div className={`${mono} mb-8 max-w-[560px] space-y-4 text-[14px] leading-[24px] text-[#080b0d]`}>
+              <div className="resq-body mt-5 max-w-[560px] space-y-4 text-[16px] leading-[27px] text-[#4f5867]">
                 {story.body.map((paragraph) => (
                   <p key={paragraph}>{paragraph}</p>
                 ))}
               </div>
-              <Link
-                to="/dich-vu"
-                className="inline-flex h-[50px] items-center justify-center rounded-[10px] bg-[#ee3224] px-[32px] no-underline transition-colors hover:bg-[#d42b1e]"
-              >
-                <span className={`${mono} text-[15px] font-[500] tracking-[1.1px] text-white`}>
-                  Thử Ngay
-                </span>
-              </Link>
             </div>
           </div>
         </section>
       ))}
 
       <section className={`${pagePadding} py-12 sm:py-14 lg:py-[60px]`}>
-        <div className={`${pageShell} rounded-[24px] bg-[#f7f7f8] px-6 py-10 text-center sm:px-8 lg:px-12 lg:py-14`}>
-          <h2 className={`${mono} mb-5 text-[32px] font-[700] text-[#080b0d] sm:text-[40px] lg:text-[48px]`}>
-            Đồng hành cùng bạn trên mọi nẻo đường
-          </h2>
-          <p className={`${mono} mx-auto mb-8 max-w-[980px] text-[14px] leading-[24px] text-[#4a5565]`}>
-            ResQ luôn sẵn sàng hỗ trợ bạn mọi lúc mọi nơi. Với đội ngũ fixer
-            chuyên nghiệp và hệ thống điều phối thông minh, chúng tôi giúp bạn
-            an tâm hơn trong mọi tình huống phát sinh trên đường.
+        <div className={`${pageShell} rounded-[30px] bg-[#111111] px-6 py-10 text-white sm:px-8 lg:px-12 lg:py-12`}>
+          <p className="resq-eyebrow text-white/56">
+            {isEnglish ? "Next step" : "Bước tiếp theo"}
           </p>
-          <Link
-            to="/tro-giup"
-            className="inline-flex h-[50px] items-center justify-center rounded-[10px] border border-[#080b0d] px-[28px] no-underline transition-colors hover:bg-[#080b0d] hover:text-white"
-          >
-            <span className={`${mono} text-[14px] font-[500] text-[#080b0d]`}>
-              Tìm hiểu thêm
-            </span>
-          </Link>
+          <h2 className="resq-display mt-4 text-[36px] leading-[0.94] font-[700] sm:text-[46px]">
+            {isEnglish ? "Open the service flow when you want to see the streamlined request journey." : "Mở danh mục dịch vụ để xem rõ luồng tạo yêu cầu đã được tinh giản."}
+          </h2>
+          <div className="mt-6">
+            <Link
+              to="/dich-vu"
+              className="inline-flex h-[52px] items-center justify-center rounded-full bg-white px-7 no-underline transition-colors hover:bg-[#f4f4f4]"
+            >
+              <span className="resq-mono text-[12px] font-[500] uppercase tracking-[0.18em] text-[#080b0d]">
+                {isEnglish ? "Open services" : "Mở dịch vụ"}
+              </span>
+            </Link>
+          </div>
         </div>
       </section>
     </div>

@@ -1,4 +1,4 @@
-import svgPaths from "../../imports/TrangChủ/svg-t7f5kuudxj";
+import svgPaths from "../../imports/TrangChủ/svg-t7f5kuudxj";
 
 const mono = "font-['IBM_Plex_Mono',monospace]";
 

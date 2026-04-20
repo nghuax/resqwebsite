@@ -1,115 +1,143 @@
 import { useState } from "react";
-import { Link } from "react-router";
+import { ChevronDown, ChevronUp, PhoneCall, ShieldAlert } from "lucide-react";
+import { useLanguage } from "../LanguageContext";
 import {
-  ChevronDown,
-  ChevronUp,
-  Clock3,
-  Mail,
-  MapPin,
-  PhoneCall,
-  ShieldAlert,
-} from "lucide-react";
-
-const mono = "font-['IBM_Plex_Mono',monospace]";
-
-const faqs = [
-  {
-    q: "ResQ hoạt động ra sao trong tình huống khẩn cấp?",
-    a: "Bạn chọn dịch vụ, xác nhận vị trí, thêm ghi chú ngắn và gửi yêu cầu. ResQ điều phối fixer gần nhất và cập nhật ETA liên tục trong màn Activity.",
-  },
-  {
-    q: "Nếu GPS của tôi không chính xác thì sao?",
-    a: "Bạn có thể ghim lại vị trí trên bản đồ, nhập địa chỉ thủ công hoặc thêm cột mốc ngay trong bước tạo yêu cầu.",
-  },
-  {
-    q: "Khi nào tôi nên gọi hotline thay vì tự tạo yêu cầu?",
-    a: "Nếu bạn đang trong tình huống nguy hiểm, pin yếu hoặc không chắc dịch vụ nào phù hợp, hãy gọi hotline để đội ngũ điều phối hỗ trợ ngay.",
-  },
-  {
-    q: "Tôi có thể thanh toán bằng cách nào?",
-    a: "MVP hỗ trợ tiền mặt, chuyển khoản hoặc ví điện tử trong luồng thanh toán. Thông tin thanh toán được lưu lại ở lịch sử yêu cầu.",
-  },
-];
-
-const supportCards = [
-  {
-    icon: PhoneCall,
-    label: "Hotline",
-    value: "1900 1234",
-    href: "tel:19001234",
-  },
-  {
-    icon: Mail,
-    label: "Email",
-    value: "support@resq.vn",
-    href: "mailto:support@resq.vn",
-  },
-  {
-    icon: Clock3,
-    label: "Hỗ trợ",
-    value: "24/7 kể cả ngày lễ",
-  },
-  {
-    icon: MapPin,
-    label: "Khu vực ưu tiên",
-    value: "TP. Hồ Chí Minh và trục liên tỉnh",
-  },
-];
+  emergencyLines,
+  getLocalizedText,
+  localSupportPlaces,
+} from "../emergencyContent";
 
 export default function MobileHelpPage() {
+  const { language } = useLanguage();
+  const isEnglish = language === "en";
   const [openIndex, setOpenIndex] = useState(0);
+
+  const faqs = isEnglish
+    ? [
+        {
+          q: "How does ResQ work in an emergency?",
+          a: "Choose the support type, confirm the location, and send the request. Dispatch routes the nearest fixer and updates ETA in tracking.",
+        },
+        {
+          q: "What if GPS is weak?",
+          a: "Re-pin the location and add a landmark before sending so the fixer starts from the right pickup point.",
+        },
+        {
+          q: "When should I call the hotline?",
+          a: "Call when you feel unsafe, the phone battery is low, or you want a dispatcher to choose the right support for you.",
+        },
+      ]
+    : [
+        {
+          q: "ResQ hoạt động ra sao trong tình huống khẩn cấp?",
+          a: "Bạn chọn dịch vụ, xác nhận vị trí và gửi yêu cầu. Điều phối sẽ tìm fixer gần nhất và cập nhật ETA trong màn theo dõi.",
+        },
+        {
+          q: "Nếu GPS yếu thì sao?",
+          a: "Hãy ghim lại vị trí và thêm cột mốc trước khi gửi để fixer bắt đầu từ đúng điểm đón.",
+        },
+        {
+          q: "Khi nào nên gọi hotline?",
+          a: "Hãy gọi nếu bạn thấy không an toàn, pin yếu hoặc muốn điều phối chọn đúng loại hỗ trợ giúp bạn.",
+        },
+      ];
 
   return (
     <div className="space-y-5 pb-5">
       <section className="rounded-[30px] bg-[linear-gradient(135deg,#fff4ef_0%,#ffe7df_100%)] px-5 py-5 shadow-[0_18px_40px_rgba(8,11,13,0.06)]">
-        <p className={`${mono} text-[10px] uppercase tracking-[0.22em] text-[#99a1af]`}>
-          Support / Safety
+        <p className="resq-eyebrow text-[#99a1af]">
+          {isEnglish ? "Support / Safety" : "Hỗ trợ / An toàn"}
         </p>
-        <h1 className="mt-3 font-['Syne',sans-serif] text-[32px] leading-[0.95] font-[700] tracking-[-0.04em] text-[#080b0d]">
-          Cần trợ giúp ngay cả khi bạn đang căng thẳng
+        <h1 className="resq-display mt-3 text-[34px] leading-[0.92] font-[700] tracking-[-0.05em] text-[#080b0d]">
+          {isEnglish ? "Emergency numbers and local places, right on mobile." : "Đầu số khẩn cấp và điểm hỗ trợ gần, ngay trên mobile."}
         </h1>
-        <p className={`${mono} mt-3 max-w-[300px] text-[12px] leading-[20px] text-[#667085]`}>
-          Các nội dung ở đây được rút gọn để bạn tìm thấy hotline, FAQ và hướng dẫn an toàn chỉ trong vài giây.
+        <p className="resq-body mt-3 max-w-[310px] text-[13px] leading-[21px] text-[#667085]">
+          {isEnglish
+            ? "This screen now keeps the most important things together: call lines, local references, and short safety guidance."
+            : "Màn này giờ gom những gì quan trọng nhất lại với nhau: đầu số gọi nhanh, điểm hỗ trợ gần và hướng dẫn an toàn ngắn gọn."}
         </p>
       </section>
 
-      <section className="grid grid-cols-2 gap-3">
-        {supportCards.map((card) => {
-          const Icon = card.icon;
-          const content = (
-            <div className="rounded-[22px] bg-white/92 p-4 shadow-[0_18px_40px_rgba(8,11,13,0.06)]">
-              <div className="flex size-[42px] items-center justify-center rounded-[16px] bg-[rgba(238,50,36,0.1)]">
-                <Icon size={18} className="text-[#ee3224]" />
-              </div>
-              <p className={`${mono} mt-4 text-[10px] uppercase tracking-[0.18em] text-[#99a1af]`}>
-                {card.label}
-              </p>
-              <p className="mt-2 font-['Syne',sans-serif] text-[21px] leading-[0.95] font-[700] tracking-[-0.03em] text-[#080b0d]">
-                {card.value}
-              </p>
-            </div>
-          );
+      <a
+        href="tel:19001234"
+        className="block rounded-[26px] bg-[#ee3224] px-5 py-5 text-white no-underline shadow-[0_18px_40px_rgba(238,50,36,0.28)]"
+      >
+        <p className="resq-eyebrow text-white/72">
+          {isEnglish ? "Primary action" : "Hành động chính"}
+        </p>
+        <h2 className="resq-display mt-3 text-[30px] leading-[0.92] font-[700] tracking-[-0.04em]">
+          {isEnglish ? "Call ResQ dispatch" : "Gọi điều phối ResQ"}
+        </h2>
+        <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-white/14 px-4 py-2">
+          <PhoneCall size={14} />
+          <span className="resq-mono text-[10px] uppercase tracking-[0.18em]">1900 1234</span>
+        </div>
+      </a>
 
-          return card.href ? (
-            <a key={card.label} href={card.href} className="no-underline">
-              {content}
+      <section className="rounded-[26px] bg-white/92 p-4 shadow-[0_18px_40px_rgba(8,11,13,0.06)]">
+        <div className="mb-4">
+          <p className="resq-eyebrow text-[#99a1af]">
+            {isEnglish ? "Emergency numbers" : "Đầu số khẩn cấp"}
+          </p>
+          <h2 className="resq-display mt-2 text-[24px] leading-[1] font-[700] tracking-[-0.04em] text-[#080b0d]">
+            {isEnglish ? "Quick call list" : "Danh sách gọi nhanh"}
+          </h2>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          {emergencyLines.map((item) => (
+            <a
+              key={item.number}
+              href={`tel:${item.number.replace(/\s+/g, "")}`}
+              className="rounded-[22px] bg-[#faf8f5] px-4 py-4 no-underline"
+            >
+              <p className="resq-eyebrow text-[#99a1af]">
+                {getLocalizedText(language, item.label, item.labelEn)}
+              </p>
+              <p className="resq-display mt-2 text-[26px] leading-none font-[700] text-[#080b0d]">
+                {item.number}
+              </p>
             </a>
-          ) : (
-            <div key={card.label}>{content}</div>
-          );
-        })}
+          ))}
+        </div>
       </section>
 
       <section className="rounded-[26px] bg-white/92 p-4 shadow-[0_18px_40px_rgba(8,11,13,0.06)]">
-        <div className="mb-4 flex items-center justify-between">
-          <div>
-            <p className={`${mono} text-[10px] uppercase tracking-[0.18em] text-[#99a1af]`}>
-              FAQ
-            </p>
-            <h2 className="mt-2 font-['Syne',sans-serif] text-[24px] leading-[1] font-[700] tracking-[-0.04em] text-[#080b0d]">
-              Câu hỏi thường gặp
-            </h2>
-          </div>
+        <div className="mb-4">
+          <p className="resq-eyebrow text-[#99a1af]">
+            {isEnglish ? "Local places" : "Điểm hỗ trợ gần"}
+          </p>
+          <h2 className="resq-display mt-2 text-[24px] leading-[1] font-[700] tracking-[-0.04em] text-[#080b0d]">
+            {isEnglish ? "Ho Chi Minh City references" : "Tham chiếu tại TP. Hồ Chí Minh"}
+          </h2>
+        </div>
+
+        <div className="space-y-3">
+          {localSupportPlaces.map((place) => (
+            <div key={place.title} className="rounded-[22px] border border-black/5 bg-[#faf8f5] px-4 py-4">
+              <p className="resq-body text-[13px] font-[800] text-[#080b0d]">
+                {getLocalizedText(language, place.title, place.titleEn)}
+              </p>
+              <p className="resq-body mt-2 text-[12px] leading-[20px] text-[#667085]">
+                {getLocalizedText(language, place.address, place.addressEn)}
+              </p>
+              <a
+                href={`tel:${place.phone.replace(/[^\d]/g, "")}`}
+                className="resq-mono mt-3 inline-flex rounded-full bg-[#080b0d] px-3 py-2 text-[10px] uppercase tracking-[0.18em] text-white no-underline"
+              >
+                {place.phone}
+              </a>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="rounded-[26px] bg-white/92 p-4 shadow-[0_18px_40px_rgba(8,11,13,0.06)]">
+        <div className="mb-4">
+          <p className="resq-eyebrow text-[#99a1af]">FAQ</p>
+          <h2 className="resq-display mt-2 text-[24px] leading-[1] font-[700] tracking-[-0.04em] text-[#080b0d]">
+            {isEnglish ? "Fast answers" : "Trả lời nhanh"}
+          </h2>
         </div>
 
         <div className="space-y-3">
@@ -119,10 +147,11 @@ export default function MobileHelpPage() {
             return (
               <div key={faq.q} className="rounded-[22px] border border-black/5 bg-[#faf8f5] px-4 py-4">
                 <button
+                  type="button"
                   onClick={() => setOpenIndex(open ? -1 : index)}
                   className="flex w-full items-start justify-between gap-4 border-0 bg-transparent p-0 text-left"
                 >
-                  <span className={`${mono} text-[12px] font-[500] leading-[20px] text-[#080b0d]`}>
+                  <span className="resq-body text-[13px] font-[800] leading-[21px] text-[#080b0d]">
                     {faq.q}
                   </span>
                   {open ? (
@@ -132,7 +161,7 @@ export default function MobileHelpPage() {
                   )}
                 </button>
                 {open && (
-                  <p className={`${mono} mt-3 text-[11px] leading-[19px] text-[#667085]`}>
+                  <p className="resq-body mt-3 text-[12px] leading-[20px] text-[#667085]">
                     {faq.a}
                   </p>
                 )}
@@ -148,43 +177,34 @@ export default function MobileHelpPage() {
             <ShieldAlert size={20} className="text-[#ff9b90]" />
           </div>
           <div>
-            <p className={`${mono} text-[10px] uppercase tracking-[0.18em] text-white/56`}>
-              Safety guidance
+            <p className="resq-eyebrow text-white/56">
+              {isEnglish ? "Safety guidance" : "Hướng dẫn an toàn"}
             </p>
-            <h2 className="mt-1 font-['Syne',sans-serif] text-[24px] leading-[1] font-[700] tracking-[-0.04em]">
-              Trong lúc chờ fixer
+            <h2 className="resq-display mt-1 text-[24px] leading-[1] font-[700] tracking-[-0.04em]">
+              {isEnglish ? "While waiting" : "Trong lúc chờ"}
             </h2>
           </div>
         </div>
         <div className="space-y-3">
-          {[
-            "Bật đèn cảnh báo và đỗ xe gọn vào lề nếu điều kiện cho phép.",
-            "Không đứng giữa làn đường để chờ hỗ trợ.",
-            "Giữ điện thoại có thể nghe cuộc gọi và xác nhận vị trí khi fixer liên hệ.",
-          ].map((item) => (
+          {(isEnglish
+            ? [
+                "Turn on hazard lights and move the vehicle to a safer edge if possible.",
+                "Do not stand in a live traffic lane while waiting for help.",
+                "If there is an injury, call 115 or 112 before continuing with vehicle support.",
+              ]
+            : [
+                "Bật đèn cảnh báo và đưa xe vào vị trí an toàn hơn nếu có thể.",
+                "Không đứng giữa làn xe đang lưu thông để chờ hỗ trợ.",
+                "Nếu có người bị thương, hãy gọi 115 hoặc 112 trước khi tiếp tục xử lý cứu hộ xe.",
+              ]).map((item) => (
             <div key={item} className="rounded-[18px] border border-white/10 bg-white/6 px-3 py-3">
-              <p className={`${mono} text-[11px] leading-[19px] text-white/82`}>
+              <p className="resq-body text-[12px] leading-[20px] text-white/82">
                 {item}
               </p>
             </div>
           ))}
         </div>
       </section>
-
-      <Link
-        to="/ve-chung-toi"
-        className="block rounded-[26px] bg-[linear-gradient(135deg,#fff4f2_0%,#fffaf7_100%)] px-5 py-5 no-underline shadow-[0_18px_40px_rgba(8,11,13,0.06)]"
-      >
-        <p className={`${mono} text-[10px] uppercase tracking-[0.22em] text-[#99a1af]`}>
-          About ResQ
-        </p>
-        <h2 className="mt-3 font-['Syne',sans-serif] text-[28px] leading-[0.95] font-[700] tracking-[-0.04em] text-[#080b0d]">
-          Xe của bạn, việc của tôi.
-        </h2>
-        <p className={`${mono} mt-3 max-w-[300px] text-[12px] leading-[20px] text-[#667085]`}>
-          Xem triết lý sản phẩm, phạm vi dịch vụ và cách ResQ được rút gọn cho bối cảnh di động tại Việt Nam.
-        </p>
-      </Link>
     </div>
   );
 }

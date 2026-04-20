@@ -34,12 +34,14 @@ export function TrackingLiveMap({
   actorRole,
   destinationPoint,
   destinationAddress,
+  compact = false,
 }: {
   requestId: string;
   actorId?: string | null;
   actorRole: ResQAuthRole;
   destinationPoint?: GeoPoint | null;
   destinationAddress?: string | null;
+  compact?: boolean;
 }) {
   const mapElementRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<LeafletMap | null>(null);
@@ -331,7 +333,9 @@ export function TrackingLiveMap({
     <div className="relative isolate overflow-hidden rounded-[20px] border border-[rgba(4,38,153,0.08)] bg-white shadow-[0_18px_50px_rgba(8,11,13,0.08)]">
       <div
         ref={mapElementRef}
-        className="h-[360px] w-full max-w-full bg-[#e9edf1] sm:h-[500px] lg:h-[640px]"
+        className={`w-full max-w-full bg-[#e9edf1] ${
+          compact ? "h-[240px] sm:h-[260px] lg:h-[280px]" : "h-[360px] sm:h-[500px] lg:h-[640px]"
+        }`}
       />
 
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.54),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.24),transparent_24%,transparent_70%,rgba(8,11,13,0.12)_100%)]" />
@@ -430,10 +434,10 @@ function MapActionButton({
     <button
       type="button"
       onClick={onClick}
-      className={`pointer-events-auto flex items-center gap-2 rounded-full border px-3 py-3 shadow-[0_18px_30px_rgba(8,11,13,0.14)] transition-all hover:-translate-y-[1px] ${
+      className={`pointer-events-auto flex items-center gap-2 rounded-full border px-3 py-3 shadow-[0_18px_30px_rgba(8,11,13,0.14)] transition-all hover:-translate-y-[1px] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[rgba(238,50,36,0.14)] ${
         active
           ? "border-[#ee3224] bg-[#ee3224] text-white"
-          : "border-[rgba(4,38,153,0.08)] bg-white text-[#080b0d]"
+          : "border-[rgba(4,38,153,0.08)] bg-white text-[#080b0d] hover:border-[rgba(238,50,36,0.18)]"
       }`}
       aria-pressed={active}
     >

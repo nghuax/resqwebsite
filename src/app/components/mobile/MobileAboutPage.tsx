@@ -1,41 +1,53 @@
 import { Link } from "react-router";
 import { MapPin, ShieldCheck, Wrench } from "lucide-react";
-
-const mono = "font-['IBM_Plex_Mono',monospace]";
+import { useLanguage } from "../LanguageContext";
 
 export default function MobileAboutPage() {
+  const { language } = useLanguage();
+  const isEnglish = language === "en";
+
+  const items = [
+    {
+      icon: ShieldCheck,
+      title: isEnglish ? "Designed for pressure" : "Thiết kế cho lúc áp lực",
+      desc: isEnglish
+        ? "One clear CTA, less UI noise, and a shorter request flow when the user is already stressed."
+        : "Một CTA chính, ít nhiễu giao diện hơn và luồng tạo yêu cầu ngắn hơn khi người dùng đang căng thẳng.",
+    },
+    {
+      icon: MapPin,
+      title: isEnglish ? "Location comes first" : "Vị trí luôn đi trước",
+      desc: isEnglish
+        ? "Requests begin from the pinned spot so the fixer starts with context instead of another call."
+        : "Yêu cầu bắt đầu từ vị trí đã ghim để fixer nhận đúng bối cảnh thay vì phải gọi vòng lại.",
+    },
+    {
+      icon: Wrench,
+      title: isEnglish ? "Vietnam-first service mix" : "Danh mục sát thực tế Việt Nam",
+      desc: isEnglish
+        ? "Motorbikes, cars, fuel delivery, towing, punctures, batteries, and local dispatch priorities."
+        : "Xe máy, ô tô, tiếp nhiên liệu, kéo xe, vá lốp, ắc quy và ưu tiên điều phối theo địa phương.",
+    },
+  ];
+
   return (
     <div className="space-y-5 pb-5">
       <section className="rounded-[30px] bg-[linear-gradient(135deg,#fff4ef_0%,#ffe6dd_100%)] px-5 py-5 shadow-[0_18px_40px_rgba(8,11,13,0.06)]">
-        <p className={`${mono} text-[10px] uppercase tracking-[0.22em] text-[#99a1af]`}>
-          About ResQ
+        <p className="resq-eyebrow text-[#99a1af]">
+          {isEnglish ? "About ResQ" : "Về ResQ"}
         </p>
-        <h1 className="mt-3 font-['Syne',sans-serif] text-[34px] leading-[0.92] font-[700] tracking-[-0.05em] text-[#080b0d]">
-          Xe của bạn, việc của tôi.
+        <h1 className="resq-display mt-3 text-[34px] leading-[0.92] font-[700] tracking-[-0.05em] text-[#080b0d]">
+          {isEnglish ? "Your vehicle. Clear next step." : "Xe của bạn. Bước tiếp theo rõ ràng."}
         </h1>
-        <p className={`${mono} mt-3 max-w-[300px] text-[12px] leading-[20px] text-[#667085]`}>
-          ResQ gom gọi cứu hộ, định vị, theo dõi fixer, thanh toán và lưu phương tiện vào một trải nghiệm tiếng Việt ưu tiên di động.
+        <p className="resq-body mt-3 max-w-[300px] text-[13px] leading-[21px] text-[#667085]">
+          {isEnglish
+            ? "ResQ combines support requests, tracking, payments, and emergency references in one calmer mobile flow."
+            : "ResQ gom tạo yêu cầu, theo dõi, thanh toán và tham chiếu khẩn cấp vào cùng một luồng mobile gọn hơn."}
         </p>
       </section>
 
       <section className="space-y-3">
-        {[
-          {
-            icon: ShieldCheck,
-            title: "Thiết kế cho lúc khẩn cấp",
-            desc: "Một CTA chính, ít chữ thừa, tiến trình rõ ràng và cập nhật trạng thái dễ hiểu ngay cả khi người dùng đang căng thẳng.",
-          },
-          {
-            icon: MapPin,
-            title: "Đặt vị trí làm trung tâm",
-            desc: "Yêu cầu hỗ trợ luôn bắt đầu từ vị trí hiện tại, cho phép ghim lại điểm đón nếu GPS yếu hoặc không chính xác.",
-          },
-          {
-            icon: Wrench,
-            title: "Phù hợp thực tế Việt Nam",
-            desc: "Dịch vụ cho xe máy, ô tô, tiếp nhiên liệu, vá lốp, kích bình và điều phối nhanh từ đội fixer gần nhất.",
-          },
-        ].map((item) => {
+        {items.map((item) => {
           const Icon = item.icon;
 
           return (
@@ -43,10 +55,10 @@ export default function MobileAboutPage() {
               <div className="flex size-[44px] items-center justify-center rounded-[18px] bg-[rgba(238,50,36,0.08)]">
                 <Icon size={18} className="text-[#ee3224]" />
               </div>
-              <h2 className="mt-4 font-['Syne',sans-serif] text-[24px] leading-[0.95] font-[700] tracking-[-0.04em] text-[#080b0d]">
+              <h2 className="resq-display mt-4 text-[24px] leading-[0.95] font-[700] tracking-[-0.04em] text-[#080b0d]">
                 {item.title}
               </h2>
-              <p className={`${mono} mt-3 text-[12px] leading-[20px] text-[#667085]`}>
+              <p className="resq-body mt-3 text-[13px] leading-[21px] text-[#667085]">
                 {item.desc}
               </p>
             </div>
@@ -54,30 +66,20 @@ export default function MobileAboutPage() {
         })}
       </section>
 
-      <section className="rounded-[26px] bg-[#111111] p-5 text-white shadow-[0_18px_40px_rgba(8,11,13,0.16)]">
-        <p className={`${mono} text-[10px] uppercase tracking-[0.22em] text-white/56`}>
-          Promise
-        </p>
-        <h2 className="mt-3 font-['Syne',sans-serif] text-[30px] leading-[0.92] font-[700] tracking-[-0.04em]">
-          Hỗ trợ nhanh hơn website, nhưng không mất tính minh bạch.
-        </h2>
-        <p className={`${mono} mt-3 text-[12px] leading-[20px] text-white/76`}>
-          Phiên bản mobile giữ toàn bộ chức năng cốt lõi của ResQ: đăng nhập, lưu xe, chọn dịch vụ, gửi yêu cầu, theo dõi fixer, thanh toán và xem lại lịch sử.
-        </p>
-      </section>
-
       <Link
         to="/dich-vu"
-        className="block rounded-[26px] bg-[#ee3224] px-5 py-5 text-white no-underline shadow-[0_18px_40px_rgba(238,50,36,0.28)]"
+        className="block rounded-[26px] bg-[#111111] px-5 py-5 text-white no-underline shadow-[0_18px_40px_rgba(8,11,13,0.16)]"
       >
-        <p className={`${mono} text-[10px] uppercase tracking-[0.22em] text-white/72`}>
-          Next step
+        <p className="resq-eyebrow text-white/56">
+          {isEnglish ? "Next step" : "Bước tiếp theo"}
         </p>
-        <h2 className="mt-3 font-['Syne',sans-serif] text-[30px] leading-[0.92] font-[700] tracking-[-0.04em]">
-          Bắt đầu một yêu cầu mới
+        <h2 className="resq-display mt-3 text-[30px] leading-[0.92] font-[700] tracking-[-0.04em]">
+          {isEnglish ? "Open the service flow" : "Mở luồng dịch vụ"}
         </h2>
-        <p className={`${mono} mt-3 text-[12px] leading-[20px] text-white/82`}>
-          Chọn dịch vụ, xác nhận vị trí và để ResQ xử lý phần điều phối.
+        <p className="resq-body mt-3 text-[13px] leading-[21px] text-white/82">
+          {isEnglish
+            ? "See how the request flow was shortened for both users and fixers."
+            : "Xem cách luồng tạo yêu cầu đã được rút gọn cho cả người dùng lẫn fixer."}
         </p>
       </Link>
     </div>

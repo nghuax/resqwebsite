@@ -1,9 +1,8 @@
-import { createBrowserRouter, Outlet } from "react-router";
+import { createBrowserRouter, Navigate, Outlet } from "react-router";
 import { Navbar, Footer, SupportBubble } from "./components/Layout";
 import HomePage from "./components/HomePage";
 import AboutPage from "./components/AboutPage";
 import ServicesPage from "./components/ServicesPage";
-import TrackingPage from "./components/TrackingPage";
 import SignInPage from "./components/SignInPage";
 import PaymentPage from "./components/PaymentPage";
 import AccountPage from "./components/AccountPage";
@@ -75,7 +74,9 @@ function ResponsiveServicesPage() {
 }
 
 function ResponsiveTrackingPage() {
-  return useIsMobile() ? <MobileActivityPage /> : <TrackingPage />;
+  return useIsMobile()
+    ? <MobileActivityPage />
+    : <Navigate to="/dich-vu?panel=tracking" replace />;
 }
 
 function ResponsiveHelpPage() {
