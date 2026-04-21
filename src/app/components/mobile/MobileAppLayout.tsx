@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router";
 import {
   CircleHelp,
   House,
+  Map,
   UserRound,
   Wrench,
   type LucideIcon,
@@ -10,6 +11,7 @@ import type { ReactNode } from "react";
 import { useAuth } from "../AuthContext";
 import { LanguageToggle } from "../LanguageToggle";
 import { useLanguage } from "../LanguageContext";
+import { SupportBubble } from "../Layout";
 
 const navItems: Array<{
   label: string;
@@ -21,6 +23,7 @@ const navItems: Array<{
 }> = [
   { label: "Trang chủ", labelEn: "Home", path: "/", icon: House },
   { label: "Dịch vụ", labelEn: "Services", fixerLabel: "Đơn hàng", fixerLabelEn: "Orders", path: "/dich-vu", icon: Wrench },
+  { label: "Garage", labelEn: "Garage", path: "/ban-do-garage", icon: Map },
   { label: "Trợ giúp", labelEn: "Help", path: "/tro-giup", icon: CircleHelp },
   { label: "Tài khoản", labelEn: "Profile", path: "/tai-khoan", icon: UserRound },
 ];
@@ -39,14 +42,30 @@ export default function MobileAppLayout({ children }: { children: ReactNode }) {
   const { language } = useLanguage();
   const isEnglish = language === "en";
   const hideBottomNav = location.pathname === "/thanh-toan";
+  const isGarageMapRoute = location.pathname === "/ban-do-garage";
 
   return (
     <div className="min-h-screen bg-[#151412] px-0 text-[#080b0d] sm:px-4 sm:py-4">
-      <div className="relative mx-auto flex min-h-screen w-full max-w-[440px] flex-col overflow-hidden bg-[linear-gradient(180deg,#fff6f1_0%,#f7f3ee_16%,#f4f1eb_100%)] shadow-[0_36px_110px_rgba(8,11,13,0.28)] sm:min-h-[calc(100vh-32px)] sm:rounded-[34px] sm:border sm:border-white/10">
-        <div className="flex justify-end px-4 pt-4 sm:px-5 sm:pt-5">
-          <LanguageToggle compact />
-        </div>
-        <main className="flex-1 overflow-y-auto px-4 pb-[104px] pt-4 sm:px-5 sm:pt-5">
+      <div className={`relative mx-auto flex min-h-screen w-full max-w-[440px] flex-col overflow-hidden shadow-[0_36px_110px_rgba(8,11,13,0.28)] sm:min-h-[calc(100vh-32px)] sm:rounded-[34px] sm:border sm:border-white/10 ${
+        isGarageMapRoute
+          ? "bg-[#0f1318]"
+          : "bg-[linear-gradient(180deg,#fff6f1_0%,#f7f3ee_16%,#f4f1eb_100%)]"
+      }`}>
+        {!isGarageMapRoute && (
+          <div className="flex justify-end px-4 pt-4 sm:px-5 sm:pt-5">
+            <LanguageToggle compact />
+          </div>
+        )}
+
+        {isGarageMapRoute && (
+          <div className="pointer-events-none absolute top-4 right-4 z-40">
+            <div className="pointer-events-auto">
+              <LanguageToggle compact />
+            </div>
+          </div>
+        )}
+
+        <main className={`flex-1 ${isGarageMapRoute ? "overflow-hidden p-0" : "overflow-y-auto px-4 pb-[104px] pt-4 sm:px-5 sm:pt-5"}`}>
           {children}
         </main>
 
@@ -81,6 +100,7 @@ export default function MobileAppLayout({ children }: { children: ReactNode }) {
             </nav>
           </div>
         )}
+        <SupportBubble />
       </div>
     </div>
   );

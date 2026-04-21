@@ -38,6 +38,7 @@ function LogoIcon() {
 const navItems = [
   { label: "Trang chủ", labelEn: "Home", path: "/" },
   { label: "Dịch vụ", labelEn: "Services", fixerLabel: "Đơn hàng", fixerLabelEn: "Orders", path: "/dich-vu" },
+  { label: "Bản đồ garage", labelEn: "Garage Map", path: "/ban-do-garage" },
   { label: "Trợ giúp", labelEn: "Help", path: "/tro-giup" },
   { label: "Về chúng tôi", labelEn: "About", path: "/ve-chung-toi" },
 ];
@@ -47,6 +48,7 @@ export function Navbar() {
   const { isLoggedIn, logout, user } = useAuth();
   const { language } = useLanguage();
   const isEnglish = language === "en";
+  const isGarageMapRoute = location.pathname === "/ban-do-garage";
   const [showNotif, setShowNotif] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notifs, setNotifs] = useState(mockNotifications);
@@ -93,7 +95,11 @@ export function Navbar() {
         : item.label;
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-[rgba(4,38,153,0.08)] bg-[rgba(255,255,255,0.92)] backdrop-blur-sm">
+    <nav className={`sticky top-0 z-50 backdrop-blur-sm ${
+      isGarageMapRoute
+        ? "border-b border-white/18 bg-[rgba(255,255,255,0.76)] shadow-[0_12px_32px_rgba(8,11,13,0.08)]"
+        : "border-b border-[rgba(4,38,153,0.08)] bg-[rgba(255,255,255,0.92)]"
+    }`}>
       <div className="mx-auto flex min-h-[76px] w-full max-w-[1360px] items-center justify-between gap-4 px-4 sm:px-6 lg:min-h-[88px] lg:px-[84px]">
         <Link to="/" className="flex items-center gap-1 no-underline">
           <LogoIcon />

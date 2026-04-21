@@ -244,7 +244,7 @@ export function TrackingBubblePanel() {
   };
 
   return (
-    <div className="pointer-events-none fixed inset-y-0 right-0 z-40 flex items-end justify-end p-4 sm:p-6">
+    <div className="pointer-events-none fixed inset-y-0 right-0 z-[1700] flex items-end justify-end p-4 sm:p-6">
       {isOpen && (
         <section className="pointer-events-auto flex h-[min(840px,calc(100vh-124px))] w-[min(430px,calc(100vw-2rem))] flex-col overflow-hidden rounded-[28px] border border-black/5 bg-white shadow-[0_28px_80px_rgba(8,11,13,0.18)]">
           <div className="flex items-start justify-between gap-4 bg-[#ee3224] px-5 py-4 text-white">
