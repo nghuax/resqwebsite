@@ -52,15 +52,15 @@ export function GarageDetailsPanel({
     return (
       <div className="rounded-[26px] border border-dashed border-black/10 bg-white/84 px-5 py-5">
         <p className="resq-eyebrow text-[#99a1af]">
-          {isEnglish ? "Garage details" : "Chi tiet garage"}
+          {isEnglish ? "Garage details" : "Chi tiết garage"}
         </p>
         <h3 className="resq-display mt-4 text-[30px] leading-[0.96] font-[700] text-[#080b0d]">
-          {isEnglish ? "Choose a garage on the map." : "Chon mot garage tren ban do."}
+          {isEnglish ? "Choose a garage on the map." : "Chọn một garage trên bản đồ."}
         </h3>
         <p className={`${mono} mt-3 text-[12px] leading-[20px] text-[#667085]`}>
           {isEnglish
             ? "Select a marker or a card to inspect the location, compare contact details, and open directions when needed."
-            : "Chon marker hoac card de xem vi tri, so sanh thong tin lien he va mo chi duong khi can."}
+            : "Chọn marker hoặc card để xem vị trí, so sánh thông tin liên hệ và mở chỉ đường khi cần."}
         </p>
       </div>
     );
@@ -94,29 +94,29 @@ export function GarageDetailsPanel({
       <div className="mt-5 grid gap-3 md:grid-cols-2">
         <DetailBlock
           icon={<MapPin size={15} className="text-[#ee3224]" />}
-          label={isEnglish ? "Address" : "Dia chi"}
+          label={isEnglish ? "Address" : "Địa chỉ"}
           value={formatAddressCopy(garage, isEnglish)}
         />
         <DetailBlock
           icon={<PhoneCall size={15} className="text-[#ee3224]" />}
-          label={isEnglish ? "Phone" : "Dien thoai"}
+          label={isEnglish ? "Phone" : "Điện thoại"}
           value={formatPhoneCopy(garage, isEnglish)}
         />
         <DetailBlock
           icon={<Star size={15} className="fill-[#ee3224] text-[#ee3224]" />}
-          label={isEnglish ? "Rating" : "Danh gia"}
+          label={isEnglish ? "Rating" : "Đánh giá"}
           value={formatRatingCopy(garage, isEnglish)}
         />
         <DetailBlock
           icon={<Star size={15} className="text-[#ee3224]" />}
-          label={isEnglish ? "Reviews" : "Luot danh gia"}
+          label={isEnglish ? "Reviews" : "Lượt đánh giá"}
           value={formatReviewCopy(garage, isEnglish)}
         />
       </div>
 
       <div className="mt-4 rounded-[20px] bg-[#faf7f2] px-4 py-4">
         <p className={`${mono} text-[10px] uppercase tracking-[0.16em] text-[#99a1af]`}>
-          {isEnglish ? "Opening hours" : "Gio mo cua"}
+          {isEnglish ? "Opening hours" : "Giờ mở cửa"}
         </p>
         <p className={`${mono} mt-2 text-[12px] leading-[20px] text-[#080b0d]`}>
           {formatOpeningHoursCopy(garage, isEnglish)}
@@ -132,7 +132,7 @@ export function GarageDetailsPanel({
         >
           <ExternalLink size={15} className="text-white" />
           <span className={`${mono} text-[11px] font-[500] uppercase tracking-[0.16em] text-white`}>
-            {isEnglish ? "Get directions" : "Chi duong"}
+            {isEnglish ? "Get directions" : "Chỉ đường"}
           </span>
         </a>
 
@@ -149,7 +149,7 @@ export function GarageDetailsPanel({
         >
           <PhoneCall size={15} className="text-[#ee3224]" />
           <span className={`${mono} text-[11px] font-[500] uppercase tracking-[0.16em] text-[#080b0d]`}>
-            {isEnglish ? "Call now" : "Goi ngay"}
+            {isEnglish ? "Call now" : "Gọi ngay"}
           </span>
         </a>
       </div>

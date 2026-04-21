@@ -10,6 +10,8 @@ import {
   Navigation,
 } from "lucide-react";
 import type { ResQAuthRole } from "@/utils/supabase/auth";
+import { useLanguage } from "../LanguageContext";
+import { localizeTrackingStatusLabel, t } from "../localization";
 import { useResolvedRequestLocations } from "./requestLocations";
 import {
   buildSecureWebsiteUrl,
@@ -43,6 +45,8 @@ export function TrackingLiveMap({
   destinationAddress?: string | null;
   compact?: boolean;
 }) {
+  const { language } = useLanguage();
+  const isEnglish = language === "en";
   const mapElementRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<LeafletMap | null>(null);
   const userMarkerRef = useRef<LeafletMarker | null>(null);
@@ -342,7 +346,7 @@ export function TrackingLiveMap({
 
       <div className="pointer-events-none absolute left-3 top-3 sm:left-6 sm:top-6">
         <span className={`${mono} inline-flex items-center rounded-full border border-white/70 bg-white/92 px-3 py-2 text-[11px] uppercase tracking-[0.16em] text-[#4a5565] shadow-[0_14px_30px_rgba(8,11,13,0.08)] backdrop-blur-[14px]`}>
-          {trackingStatus.label}
+          {localizeTrackingStatusLabel(trackingStatus.label, isEnglish)}
         </span>
       </div>
 
@@ -350,19 +354,19 @@ export function TrackingLiveMap({
         <MapActionButton
           active={false}
           icon={<LocateFixed size={16} />}
-          label="Vị trí tôi"
+          label={t(isEnglish, "Vị trí tôi", "My location")}
           onClick={handleLocateMe}
         />
         <MapActionButton
           active={false}
           icon={<Crosshair size={16} />}
-          label="Căn giữa"
+          label={t(isEnglish, "Căn giữa", "Center")}
           onClick={handleRecenter}
         />
         <MapActionButton
           active={followVehicle}
           icon={<Navigation size={16} />}
-          label="Theo fixer"
+          label={t(isEnglish, "Theo fixer", "Follow fixer")}
           onClick={handleToggleFollow}
         />
       </div>
@@ -374,10 +378,10 @@ export function TrackingLiveMap({
               <LoaderCircle className="animate-spin text-[#ee3224]" size={18} />
               <div>
                 <p className={`${mono} text-[11px] uppercase tracking-[0.22em] text-[#99a1af]`}>
-                  Đang đồng bộ theo thời gian thực
+                  {t(isEnglish, "Đang đồng bộ theo thời gian thực", "Syncing in real time")}
                 </p>
                 <p className={`${mono} text-[15px] font-[500] text-[#080b0d]`}>
-                  Đang lấy vị trí user và fixer...
+                  {t(isEnglish, "Đang lấy vị trí user và fixer...", "Loading user and fixer locations...")}
                 </p>
               </div>
             </div>
@@ -394,11 +398,14 @@ export function TrackingLiveMap({
               </div>
               <div className="min-w-0">
                 <p className={`${mono} text-[11px] uppercase tracking-[0.18em] text-[#ee3224]`}>
-                  GPS bị chặn trên bản HTTP
+                  {t(isEnglish, "GPS bị chặn trên bản HTTP", "GPS is blocked on HTTP")}
                 </p>
                 <p className={`${mono} mt-2 text-[12px] leading-[20px] text-[#4a5565]`}>
-                  Trình duyệt sẽ không cấp quyền vị trí trên domain public hiện tại. Mở bản HTTPS để
-                  theo dõi user và fixer bằng GPS thực.
+                  {t(
+                    isEnglish,
+                    "Trình duyệt sẽ không cấp quyền vị trí trên domain public hiện tại. Mở bản HTTPS để theo dõi user và fixer bằng GPS thực.",
+                    "The browser will not grant location permission on the current public HTTP domain. Open the HTTPS version to track the user and fixer with live GPS.",
+                  )}
                 </p>
                 {secureWebsiteUrl && (
                   <a
@@ -406,7 +413,7 @@ export function TrackingLiveMap({
                     className="mt-3 inline-flex h-[36px] items-center justify-center rounded-full bg-[#ee3224] px-4 no-underline transition-colors hover:bg-[#d42b1e]"
                   >
                     <span className={`${mono} text-[10px] uppercase tracking-[0.16em] text-white`}>
-                      Mở bản HTTPS
+                      {t(isEnglish, "Mở bản HTTPS", "Open HTTPS")}
                     </span>
                   </a>
                 )}

@@ -645,41 +645,65 @@ export function removeVehicle(vehicleId: string) {
 }
 
 export function setActiveRequest(request: ActiveResQRequest) {
-  currentActiveRequest = normalizeRequest(request);
+  const previousActiveRequest = currentActiveRequest;
+  const previousRequestHistory = currentRequestHistory;
+  const optimisticRequest = normalizeRequest(request);
+
+  currentActiveRequest = optimisticRequest;
   currentRequestHistory = upsertHistoryEntry(
-    toHistoryItem(currentActiveRequest),
+    toHistoryItem(optimisticRequest),
   );
   emitChange();
-  void createServiceRequestRemote({
-    id: currentActiveRequest.id,
-    serviceId: currentActiveRequest.serviceId,
-    serviceTitle: currentActiveRequest.serviceTitle,
-    servicePrice: currentActiveRequest.servicePrice,
-    serviceEta: currentActiveRequest.serviceEta,
-    vehicleId: currentActiveRequest.vehicleId,
-    vehicleName: currentActiveRequest.vehicleName,
-    vehiclePlate: currentActiveRequest.vehiclePlate,
-    vehicleType: currentActiveRequest.vehicleType,
-    locationAddress: currentActiveRequest.locationAddress,
-    locationLat: currentActiveRequest.locationPoint.lat,
-    locationLng: currentActiveRequest.locationPoint.lng,
-    locationSource: currentActiveRequest.locationSource,
-    notes: currentActiveRequest.notes,
-  })
-    .then(() => {
+
+  return persistVehiclesSnapshot(currentVehicles)
+    .then(() =>
+      createServiceRequestRemote({
+        id: optimisticRequest.id,
+        serviceId: optimisticRequest.serviceId,
+        serviceTitle: optimisticRequest.serviceTitle,
+        servicePrice: optimisticRequest.servicePrice,
+        serviceEta: optimisticRequest.serviceEta,
+        vehicleId: optimisticRequest.vehicleId,
+        vehicleName: optimisticRequest.vehicleName,
+        vehiclePlate: optimisticRequest.vehiclePlate,
+        vehicleType: optimisticRequest.vehicleType,
+        locationAddress: optimisticRequest.locationAddress,
+        locationLat: optimisticRequest.locationPoint.lat,
+        locationLng: optimisticRequest.locationPoint.lng,
+        locationSource: optimisticRequest.locationSource,
+        notes: optimisticRequest.notes,
+      }),
+    )
+    .then((remoteRequest) => {
+      const syncedRequest = remoteRequest
+        ? mapRequestRecordToRequest(remoteRequest as RequestRecord)
+        : optimisticRequest;
+
+      currentActiveRequest = syncedRequest;
+      currentRequestHistory = normalizeHistory([
+        toHistoryItem(syncedRequest),
+        ...previousRequestHistory.filter(
+          (entry) => entry.id !== syncedRequest.id,
+        ),
+      ]);
+      emitChange();
+      seedRequestLocation({
+        requestId: syncedRequest.id,
+        actorId: syncedRequest.requesterId,
+        actorRole: "user",
+        point: syncedRequest.locationPoint,
+        source: syncedRequest.locationSource,
+        address: syncedRequest.locationAddress,
+      });
       refreshRemoteRequestState();
+      return syncedRequest;
     })
-    .catch(() => {
-      // Keep the optimistic request visible and let the next sync reconcile remote state.
+    .catch((error) => {
+      currentActiveRequest = previousActiveRequest;
+      currentRequestHistory = previousRequestHistory;
+      emitChange();
+      throw error;
     });
-  seedRequestLocation({
-    requestId: currentActiveRequest.id,
-    actorId: currentActiveRequest.requesterId,
-    actorRole: "user",
-    point: currentActiveRequest.locationPoint,
-    source: currentActiveRequest.locationSource,
-    address: currentActiveRequest.locationAddress,
-  });
 }
 
 export function clearActiveRequest() {
@@ -692,6 +716,8 @@ export function cancelActiveRequest() {
     return null;
   }
 
+  const previousActiveRequest = currentActiveRequest;
+  const previousRequestHistory = currentRequestHistory;
   const cancelledRequest = normalizeRequest({
     ...currentActiveRequest,
     status: "Đã hủy",
@@ -700,14 +726,30 @@ export function cancelActiveRequest() {
   currentActiveRequest = null;
   currentRequestHistory = upsertHistoryEntry(toHistoryItem(cancelledRequest));
   emitChange();
-  void cancelServiceRequestRemote(cancelledRequest.id)
-    .then(() => {
+
+  return cancelServiceRequestRemote(cancelledRequest.id)
+    .then((remoteRequest) => {
+      const syncedRequest = remoteRequest
+        ? mapRequestRecordToRequest(remoteRequest as RequestRecord)
+        : cancelledRequest;
+
+      currentActiveRequest = null;
+      currentRequestHistory = normalizeHistory([
+        toHistoryItem(syncedRequest),
+        ...previousRequestHistory.filter(
+          (entry) => entry.id !== syncedRequest.id,
+        ),
+      ]);
+      emitChange();
       refreshRemoteRequestState();
+      return syncedRequest;
     })
     .catch(() => {
-      // Keep the optimistic cancellation visible and let the next sync reconcile remote state.
+      currentActiveRequest = previousActiveRequest;
+      currentRequestHistory = previousRequestHistory;
+      emitChange();
+      return null;
     });
-  return cancelledRequest;
 }
 
 export function confirmIncomingRequest(requestId: string) {
@@ -722,6 +764,9 @@ export function confirmIncomingRequest(requestId: string) {
     return null;
   }
 
+  const previousActiveRequest = currentActiveRequest;
+  const previousIncomingRequests = currentIncomingRequests;
+  const previousRequestHistory = currentRequestHistory;
   const confirmedRequest = normalizeRequest({
     ...nextRequest,
     fixerId: currentActor.id,
@@ -740,14 +785,34 @@ export function confirmIncomingRequest(requestId: string) {
   currentActiveRequest = confirmedRequest;
   currentRequestHistory = upsertHistoryEntry(toHistoryItem(confirmedRequest));
   emitChange();
-  void acceptServiceRequest(requestId)
-    .then(() => {
+
+  return acceptServiceRequest(requestId)
+    .then((remoteRequest) => {
+      const syncedRequest = remoteRequest
+        ? mapRequestRecordToRequest(remoteRequest as RequestRecord)
+        : confirmedRequest;
+
+      currentIncomingRequests = previousIncomingRequests.filter(
+        (request) => request.id !== syncedRequest.id,
+      );
+      currentActiveRequest = syncedRequest;
+      currentRequestHistory = normalizeHistory([
+        toHistoryItem(syncedRequest),
+        ...previousRequestHistory.filter(
+          (entry) => entry.id !== syncedRequest.id,
+        ),
+      ]);
+      emitChange();
       refreshRemoteRequestState();
+      return syncedRequest;
     })
     .catch(() => {
-      // Keep the optimistic confirmation visible and let the next sync reconcile remote state.
+      currentActiveRequest = previousActiveRequest;
+      currentIncomingRequests = previousIncomingRequests;
+      currentRequestHistory = previousRequestHistory;
+      emitChange();
+      return null;
     });
-  return confirmedRequest;
 }
 
 export function advanceActiveRequestStatus() {
@@ -755,6 +820,8 @@ export function advanceActiveRequestStatus() {
     return null;
   }
 
+  const previousActiveRequest = currentActiveRequest;
+  const previousRequestHistory = currentRequestHistory;
   const nextStatus = getNextActiveStatus(currentActiveRequest.status);
   const nextRequest = normalizeRequest({
     ...currentActiveRequest,
@@ -776,14 +843,41 @@ export function advanceActiveRequestStatus() {
     ),
   );
   emitChange();
-  void advanceServiceRequestStatusRemote(nextRequest.id)
-    .then(() => {
+
+  return advanceServiceRequestStatusRemote(nextRequest.id)
+    .then((remoteRequest) => {
+      const syncedRequest = remoteRequest
+        ? mapRequestRecordToRequest(remoteRequest as RequestRecord)
+        : nextRequest;
+
+      currentActiveRequest =
+        syncedRequest.status === "Hoàn thành" ? null : syncedRequest;
+      currentRequestHistory = normalizeHistory([
+        toHistoryItem(
+          syncedRequest,
+          syncedRequest.status === "Hoàn thành"
+            ? {
+                paymentStatus: "Đã thanh toán",
+                paymentMethod: "Thanh toán tại hiện trường",
+                totalAmount: syncedRequest.servicePrice,
+                completedAt: new Date().toISOString(),
+              }
+            : undefined,
+        ),
+        ...previousRequestHistory.filter(
+          (entry) => entry.id !== syncedRequest.id,
+        ),
+      ]);
+      emitChange();
       refreshRemoteRequestState();
+      return syncedRequest;
     })
     .catch(() => {
-      // Keep the optimistic progress visible and let the next sync reconcile remote state.
+      currentActiveRequest = previousActiveRequest;
+      currentRequestHistory = previousRequestHistory;
+      emitChange();
+      return null;
     });
-  return nextRequest;
 }
 
 export function completeActiveRequest(input: {
@@ -794,12 +888,14 @@ export function completeActiveRequest(input: {
     return null;
   }
 
+  const previousActiveRequest = currentActiveRequest;
+  const previousRequestHistory = currentRequestHistory;
   const completedRequest = normalizeRequest({
     ...currentActiveRequest,
     status: "Hoàn thành",
   });
 
-  currentActiveRequest = completedRequest;
+  currentActiveRequest = null;
   currentRequestHistory = upsertHistoryEntry(
     toHistoryItem(completedRequest, {
       paymentStatus: "Đã thanh toán",
@@ -809,14 +905,35 @@ export function completeActiveRequest(input: {
     }),
   );
   emitChange();
-  void completeServiceRequestRemote(completedRequest.id)
-    .then(() => {
+
+  return completeServiceRequestRemote(completedRequest.id)
+    .then((remoteRequest) => {
+      const syncedRequest = remoteRequest
+        ? mapRequestRecordToRequest(remoteRequest as RequestRecord)
+        : completedRequest;
+
+      currentActiveRequest = null;
+      currentRequestHistory = normalizeHistory([
+        toHistoryItem(syncedRequest, {
+          paymentStatus: "Đã thanh toán",
+          paymentMethod: input.paymentMethod,
+          totalAmount: input.totalAmount,
+          completedAt: new Date().toISOString(),
+        }),
+        ...previousRequestHistory.filter(
+          (entry) => entry.id !== syncedRequest.id,
+        ),
+      ]);
+      emitChange();
       refreshRemoteRequestState();
+      return syncedRequest;
     })
     .catch(() => {
-      // Keep the optimistic completion visible and let the next sync reconcile remote state.
+      currentActiveRequest = previousActiveRequest;
+      currentRequestHistory = previousRequestHistory;
+      emitChange();
+      return null;
     });
-  return completedRequest;
 }
 
 export function createRequestDraft(input: {

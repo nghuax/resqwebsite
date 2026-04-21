@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { MessageSquare, SendHorizonal } from "lucide-react";
 import type { ResQAuthRole } from "@/utils/supabase/auth";
+import { useLanguage } from "../LanguageContext";
+import { t } from "../localization";
 import {
   useRequestChat,
   type RequestChatMessage,
@@ -8,8 +10,8 @@ import {
 
 const mono = "font-['IBM_Plex_Mono',monospace]";
 
-function formatChatTimestamp(value: string) {
-  return new Date(value).toLocaleTimeString("vi-VN", {
+function formatChatTimestamp(value: string, isEnglish: boolean) {
+  return new Date(value).toLocaleTimeString(isEnglish ? "en-US" : "vi-VN", {
     hour: "2-digit",
     minute: "2-digit",
   });
@@ -40,17 +42,29 @@ export function RequestChatPanel({
   actorRole: ResQAuthRole;
   compact?: boolean;
 }) {
+  const { language } = useLanguage();
+  const isEnglish = language === "en";
   const { messages, isLoading, isSending, isUsingFallback, sendMessage } =
     useRequestChat(requestId);
   const [draft, setDraft] = useState("");
 
   const introLabel = useMemo(() => {
-    return actorRole === "fixer" ? "Trao đổi với khách hàng" : "Trao đổi với fixer";
-  }, [actorRole]);
+    return actorRole === "fixer"
+      ? t(isEnglish, "Trao đổi với khách hàng", "Chat with the customer")
+      : t(isEnglish, "Trao đổi với fixer", "Chat with the fixer");
+  }, [actorRole, isEnglish]);
 
   const emptyLabel = actorRole === "fixer"
-    ? "Khi bạn xác nhận đơn, bạn có thể cập nhật nhanh cho khách hàng tại đây."
-    : "Khi fixer nhận đơn, bạn có thể trao đổi trực tiếp trong khung chat này.";
+    ? t(
+        isEnglish,
+        "Khi bạn xác nhận đơn, bạn có thể cập nhật nhanh cho khách hàng tại đây.",
+        "After you confirm a request, you can send quick updates to the customer here.",
+      )
+    : t(
+        isEnglish,
+        "Khi fixer nhận đơn, bạn có thể trao đổi trực tiếp trong khung chat này.",
+        "After a fixer accepts the request, you can chat directly in this panel.",
+      );
 
   if (!requestId) {
     return null;
@@ -68,7 +82,7 @@ export function RequestChatPanel({
         </div>
         <div>
           <p className={`${mono} text-[12px] uppercase tracking-[1.4px] text-[#99a1af]`}>
-            Chat request
+          {t(isEnglish, "Chat yêu cầu", "Request chat")}
           </p>
           <p className={`${mono} text-[15px] font-[700] text-[#080b0d]`}>
             {introLabel}
@@ -78,11 +92,13 @@ export function RequestChatPanel({
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <span className={`${mono} inline-flex rounded-full bg-[rgba(4,38,153,0.05)] px-3 py-1 text-[10px] uppercase tracking-[0.14em] text-[#4a5565]`}>
-          {isUsingFallback ? "Chat cục bộ" : "Chat đồng bộ"}
+          {isUsingFallback
+            ? t(isEnglish, "Chat cục bộ", "Local chat")
+            : t(isEnglish, "Chat đồng bộ", "Synced chat")}
         </span>
         {isLoading && (
           <span className={`${mono} text-[10px] uppercase tracking-[0.14em] text-[#99a1af]`}>
-            Đang tải hội thoại...
+            {t(isEnglish, "Đang tải hội thoại...", "Loading conversation...")}
           </span>
         )}
       </div>
@@ -102,11 +118,11 @@ export function RequestChatPanel({
                   {message.senderRole === "system"
                     ? "ResQ"
                     : message.senderRole === actorRole
-                      ? "Bạn"
+                      ? t(isEnglish, "Bạn", "You")
                       : message.senderName}
                 </p>
                 <span className={`${mono} text-[10px] text-[#99a1af]`}>
-                  {formatChatTimestamp(message.createdAt)}
+                  {formatChatTimestamp(message.createdAt, isEnglish)}
                 </span>
               </div>
               <p className={`${mono} mt-2 text-[12px] leading-[20px]`}>
@@ -148,8 +164,8 @@ export function RequestChatPanel({
           onChange={(event) => setDraft(event.target.value)}
           placeholder={
             actorRole === "fixer"
-              ? "Nhắn trạng thái hoặc dặn khách hàng..."
-              : "Nhắn cho fixer về vị trí hoặc tình trạng xe..."
+              ? t(isEnglish, "Nhắn trạng thái hoặc dặn khách hàng...", "Send a status note or customer instruction...")
+              : t(isEnglish, "Nhắn cho fixer về vị trí hoặc tình trạng xe...", "Message the fixer about your location or vehicle condition...")
           }
           disabled={isSending}
           className={`h-[46px] flex-1 rounded-[12px] border border-[rgba(4,38,153,0.08)] bg-[#f9fafb] px-4 text-[13px] text-[#080b0d] outline-none transition-colors placeholder:text-[#a4a4a4] focus:border-[#ee3224] ${mono}`}
@@ -163,7 +179,7 @@ export function RequestChatPanel({
         >
           <SendHorizonal size={16} className="text-white" />
           <span className={`${mono} text-[13px] font-[500] text-white`}>
-            {isSending ? "Đang gửi" : "Gửi"}
+            {isSending ? t(isEnglish, "Đang gửi", "Sending") : t(isEnglish, "Gửi", "Send")}
           </span>
         </button>
       </form>

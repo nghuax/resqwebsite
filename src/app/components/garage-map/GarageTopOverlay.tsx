@@ -48,12 +48,12 @@ export function GarageTopOverlay({
           <div className="grid gap-2 lg:grid-cols-[190px_minmax(260px,1fr)_auto] lg:items-center xl:grid-cols-[230px_minmax(360px,1fr)_auto]">
             <div className="min-w-0">
               <p className="resq-eyebrow text-[10px] text-[#ee3224]">
-                {t(isEnglish, "Ban do garage", "Garage map")}
+                {t(isEnglish, "Bản đồ garage", "Garage map")}
               </p>
               <h1 className="resq-display mt-1 text-[18px] leading-[0.96] font-[700] text-[#080b0d] sm:text-[22px]">
                 {activeCategory === "car"
-                  ? t(isEnglish, "Garage o to gan ban", "Nearby car garages")
-                  : t(isEnglish, "Garage xe may gan ban", "Nearby motorcycle garages")}
+                  ? t(isEnglish, "Garage ô tô gần bạn", "Nearby car garages")
+                  : t(isEnglish, "Garage xe máy gần bạn", "Nearby motorcycle garages")}
               </h1>
             </div>
 
@@ -65,7 +65,7 @@ export function GarageTopOverlay({
                   onChange={(event) => onSearchChange(event.target.value)}
                   placeholder={t(
                     isEnglish,
-                    "Tim theo ten hoac dia chi garage",
+                    "Tìm theo tên hoặc địa chỉ garage",
                     "Search by garage name or address",
                   )}
                   className="resq-body w-full border-0 bg-transparent text-[14px] text-[#080b0d] outline-none placeholder:text-[#99a1af]"
@@ -89,10 +89,10 @@ export function GarageTopOverlay({
                   onChange={(event) => onSortChange(event.target.value as GarageSortMode)}
                   className={`${mono} border-0 bg-transparent text-[10px] uppercase tracking-[0.14em] text-[#080b0d] outline-none`}
                 >
-                  <option value="smart">{t(isEnglish, "Thong minh", "Smart")}</option>
-                  <option value="rating">{t(isEnglish, "Diem cao nhat", "Highest rated")}</option>
-                  <option value="reviews">{t(isEnglish, "Nhieu danh gia", "Most reviewed")}</option>
-                  <option value="nearest">{t(isEnglish, "Gan nhat", "Nearest first")}</option>
+                  <option value="smart">{t(isEnglish, "Thông minh", "Smart")}</option>
+                  <option value="rating">{t(isEnglish, "Điểm cao nhất", "Highest rated")}</option>
+                  <option value="reviews">{t(isEnglish, "Nhiều đánh giá", "Most reviewed")}</option>
+                  <option value="nearest">{t(isEnglish, "Gần nhất", "Nearest first")}</option>
                 </select>
               </label>
 
@@ -104,8 +104,8 @@ export function GarageTopOverlay({
                 <LocateFixed size={13} className={`${isLocatingUser ? "animate-pulse" : ""} text-[#ee3224]`} />
                 <span className={`${mono} text-[10px] font-[500] uppercase tracking-[0.14em] text-[#080b0d]`}>
                   {isLocatingUser
-                    ? t(isEnglish, "Dang tim", "Locating")
-                    : t(isEnglish, "Vi tri cua toi", "Locate me")}
+                    ? t(isEnglish, "Đang tìm", "Locating")
+                    : t(isEnglish, "Vị trí của tôi", "Locate me")}
                 </span>
               </button>
 
@@ -116,7 +116,7 @@ export function GarageTopOverlay({
               >
                 <Maximize2 size={13} className="text-[#ee3224]" />
                 <span className={`${mono} text-[10px] font-[500] uppercase tracking-[0.14em] text-[#080b0d]`}>
-                  {t(isEnglish, "Can het ket qua", "Fit results")}
+                  {t(isEnglish, "Căn hết kết quả", "Fit results")}
                 </span>
               </button>
             </div>
@@ -126,7 +126,7 @@ export function GarageTopOverlay({
             <div className="flex flex-wrap gap-2">
               <div className="rounded-full border border-white/50 bg-white/82 px-2.5 py-1 shadow-[0_8px_18px_rgba(8,11,13,0.05)]">
                 <span className={`${mono} text-[9px] uppercase tracking-[0.14em] text-[#667085]`}>
-                  {visibleCount} {t(isEnglish, "dia diem", "locations")}
+                  {visibleCount} {t(isEnglish, "địa điểm", "locations")}
                 </span>
               </div>
               <div className="hidden rounded-full border border-white/50 bg-white/82 px-2.5 py-1 shadow-[0_8px_18px_rgba(8,11,13,0.05)] sm:block">
@@ -145,7 +145,7 @@ export function GarageTopOverlay({
               >
                 <ExternalLink size={12} className="text-[#ee3224]" />
                 <span className={`${mono} text-[9px] font-[500] uppercase tracking-[0.14em] text-[#080b0d]`}>
-                  {isEnglish ? "Source" : "Nguon"}
+                  {isEnglish ? "Source" : "Nguồn"}
                 </span>
               </a>
             )}

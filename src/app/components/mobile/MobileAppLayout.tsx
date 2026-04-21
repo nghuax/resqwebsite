@@ -1,7 +1,6 @@
 import { Link, useLocation } from "react-router";
 import {
   CircleHelp,
-  House,
   Map,
   UserRound,
   Wrench,
@@ -21,9 +20,8 @@ const navItems: Array<{
   path: string;
   icon: LucideIcon;
 }> = [
-  { label: "Trang chủ", labelEn: "Home", path: "/", icon: House },
-  { label: "Dịch vụ", labelEn: "Services", fixerLabel: "Đơn hàng", fixerLabelEn: "Orders", path: "/dich-vu", icon: Wrench },
   { label: "Garage", labelEn: "Garage", path: "/ban-do-garage", icon: Map },
+  { label: "Dịch vụ", labelEn: "Services", fixerLabel: "Đơn hàng", fixerLabelEn: "Orders", path: "/dich-vu", icon: Wrench },
   { label: "Trợ giúp", labelEn: "Help", path: "/tro-giup", icon: CircleHelp },
   { label: "Tài khoản", labelEn: "Profile", path: "/tai-khoan", icon: UserRound },
 ];

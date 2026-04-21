@@ -11,7 +11,9 @@ import type { Session } from "@supabase/supabase-js";
 import { refreshResQStore, setResQStoreScope } from "./resqStore";
 import {
   buildAuthUser,
+  ensureProfile,
   formatAuthError,
+  normalizeRole,
   type ResQAuthRole,
   type ResQAuthUser,
   syncProfile,
@@ -90,6 +92,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsLoading(false);
         return;
       }
+
+      await ensureProfile(nextSession.user, {
+        name: "",
+        phone: "",
+        email: nextSession.user.email ?? "",
+        role: normalizeRole(nextSession.user.user_metadata?.role),
+      });
 
       const nextUser = await buildAuthUser(nextSession.user);
 
@@ -191,11 +200,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error: formatAuthError(error.message) };
     }
 
-    const authUser = data.user
-      ? await buildAuthUser(data.user)
-      : data.session?.user
-        ? await buildAuthUser(data.session.user)
-        : null;
+    const signedInUser = data.user ?? data.session?.user ?? null;
+
+    if (signedInUser) {
+      await ensureProfile(signedInUser, {
+        name: "",
+        phone: "",
+        email: normalizedEmail,
+        role,
+      });
+    }
+
+    const authUser = signedInUser ? await buildAuthUser(signedInUser) : null;
 
     if (authUser && authUser.role !== role) {
       await supabase.auth.signOut();
@@ -226,6 +242,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         data: {
           full_name: input.name.trim(),
           phone: input.phone.trim(),
+          role: input.role,
         },
       },
     });

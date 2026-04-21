@@ -1,6 +1,5 @@
 import { createBrowserRouter, Navigate, Outlet, useLocation } from "react-router";
 import { Navbar, Footer, SupportBubble } from "./components/Layout";
-import HomePage from "./components/HomePage";
 import AboutPage from "./components/AboutPage";
 import ServicesPage from "./components/ServicesPage";
 import GarageMapPage from "./components/GarageMapPage";
@@ -10,7 +9,6 @@ import AccountPage from "./components/AccountPage";
 import HelpPage from "./components/HelpPage";
 import { useIsMobile } from "./components/ui/use-mobile";
 import MobileAppLayout from "./components/mobile/MobileAppLayout";
-import MobileHomePage from "./components/mobile/MobileHomePage";
 import MobileServicesPage from "./components/mobile/MobileServicesPage";
 import MobileActivityPage from "./components/mobile/MobileActivityPage";
 import MobileHelpPage from "./components/mobile/MobileHelpPage";
@@ -69,10 +67,6 @@ function SignInLayout() {
   );
 }
 
-function ResponsiveHomePage() {
-  return useIsMobile() ? <MobileHomePage /> : <HomePage />;
-}
-
 function ResponsiveServicesPage() {
   return useIsMobile() ? <MobileServicesPage /> : <ServicesPage />;
 }
@@ -104,7 +98,7 @@ export const router = createBrowserRouter([
     path: "/",
     Component: Root,
     children: [
-      { index: true, Component: ResponsiveHomePage },
+      { index: true, element: <Navigate to="/ban-do-garage" replace /> },
       { path: "dich-vu", Component: ResponsiveServicesPage },
       { path: "ban-do-garage", Component: ResponsiveGarageMapPage },
       { path: "theo-doi", Component: ResponsiveTrackingPage },

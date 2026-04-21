@@ -1,5 +1,22 @@
-export function getServiceProgress(status: string) {
-  const steps = [
+export function getServiceProgress(status: string, isEnglish = false) {
+  const steps = isEnglish ? [
+    {
+      label: "Request sent",
+      detail: "The system recorded the service and is preparing dispatch.",
+    },
+    {
+      label: "Fixer confirmed",
+      detail: "The ResQ team accepted the request and is ready to move.",
+    },
+    {
+      label: "En route",
+      detail: "The fixer is heading to your location on the updated route.",
+    },
+    {
+      label: "Support in progress",
+      detail: "The technician is handling the vehicle and completing the service on site.",
+    },
+  ] : [
     {
       label: "Yêu cầu đã gửi",
       detail: "Hệ thống đã ghi nhận dịch vụ và chuẩn bị điều phối.",
@@ -33,6 +50,8 @@ export function getServiceProgress(status: string) {
     steps,
     currentIndex,
     percent: ((currentIndex + 1) / steps.length) * 100,
-    progressLabel: `${currentIndex + 1}/${steps.length} giai đoạn`,
+    progressLabel: isEnglish
+      ? `${currentIndex + 1}/${steps.length} stages`
+      : `${currentIndex + 1}/${steps.length} giai đoạn`,
   };
 }

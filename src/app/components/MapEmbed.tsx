@@ -5,6 +5,8 @@ import type {
   Map as LeafletMap,
   Polyline,
 } from "leaflet";
+import { useLanguage } from "./LanguageContext";
+import { t } from "./localization";
 
 type MapEmbedProps = {
   className?: string;
@@ -28,9 +30,21 @@ export function MapEmbed({
   lat = 10.7769,
   lng = 106.7009,
   zoom = 13,
-  label = "ResQ đang hỗ trợ khu vực này",
-  description = "Đội cứu hộ có thể tiếp cận trong khoảng 15-30 phút.",
+  label,
+  description,
 }: MapEmbedProps) {
+  const { language } = useLanguage();
+  const isEnglish = language === "en";
+  const displayLabel = label ?? t(
+    isEnglish,
+    "ResQ đang hỗ trợ khu vực này",
+    "ResQ is supporting this area",
+  );
+  const displayDescription = description ?? t(
+    isEnglish,
+    "Đội cứu hộ có thể tiếp cận trong khoảng 15-30 phút.",
+    "The rescue team can arrive in about 15-30 minutes.",
+  );
   const mapElementRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<LeafletMap | null>(null);
   const markerRef = useRef<CircleMarker | null>(null);
@@ -213,29 +227,29 @@ export function MapEmbed({
 
       <div className="pointer-events-none absolute left-4 top-4 max-w-[min(280px,calc(100%-2rem))] rounded-[18px] border border-white/75 bg-white/88 px-4 py-3 shadow-[0_14px_36px_rgba(8,11,13,0.08)] backdrop-blur-[14px] sm:left-5 sm:top-5">
         <p className="font-['IBM_Plex_Mono',monospace] text-[11px] uppercase tracking-[0.18em] text-[#99a1af]">
-          Bản đồ ResQ
+          {t(isEnglish, "Bản đồ ResQ", "ResQ map")}
         </p>
         <p className="mt-1 font-['IBM_Plex_Mono',monospace] text-[14px] font-[700] leading-[1.5] text-[#080b0d]">
-          {label}
+          {displayLabel}
         </p>
         <p className="mt-1 font-['IBM_Plex_Mono',monospace] text-[12px] leading-[1.7] text-[#4a5565]">
-          {description}
+          {displayDescription}
         </p>
       </div>
 
       <div className="pointer-events-none absolute bottom-4 left-4 right-4 flex flex-wrap gap-2 sm:bottom-5 sm:left-5 sm:right-auto">
         <span className="font-['IBM_Plex_Mono',monospace] rounded-full border border-white/75 bg-white/90 px-3 py-1.5 text-[11px] uppercase tracking-[0.16em] text-[#080b0d] shadow-[0_10px_24px_rgba(8,11,13,0.08)] backdrop-blur-[14px]">
-          Phủ sóng 24/7
+          {t(isEnglish, "Phủ sóng 24/7", "24/7 coverage")}
         </span>
         <span className="font-['IBM_Plex_Mono',monospace] rounded-full border border-white/75 bg-white/90 px-3 py-1.5 text-[11px] uppercase tracking-[0.16em] text-[#4a5565] shadow-[0_10px_24px_rgba(8,11,13,0.08)] backdrop-blur-[14px]">
-          Điều phối gần nhất
+          {t(isEnglish, "Điều phối gần nhất", "Nearest dispatch")}
         </span>
       </div>
 
       {!isReady && (
         <div className="absolute inset-0 flex items-center justify-center bg-white/55 backdrop-blur-[2px]">
           <div className="rounded-full border border-[rgba(4,38,153,0.08)] bg-white/90 px-4 py-2 font-['IBM_Plex_Mono',monospace] text-[11px] uppercase tracking-[0.18em] text-[#4a5565] shadow-[0_10px_24px_rgba(8,11,13,0.08)]">
-            Đang tải bản đồ
+            {t(isEnglish, "Đang tải bản đồ", "Loading map")}
           </div>
         </div>
       )}

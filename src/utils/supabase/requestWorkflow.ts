@@ -210,3 +210,33 @@ export async function listWorkflowRequestStatusEvents(requestId: string) {
 
   return (data ?? []) as WorkflowStatusEventRow[];
 }
+
+export function formatWorkflowError(error: unknown) {
+  const message =
+    error && typeof error === "object" && "message" in error
+      ? String((error as { message?: unknown }).message ?? "")
+      : String(error ?? "");
+  const normalized = message.toLowerCase();
+
+  if (!message) {
+    return "Không thể đồng bộ yêu cầu với Supabase. Vui lòng thử lại.";
+  }
+
+  if (normalized.includes("đăng nhập") || normalized.includes("jwt")) {
+    return "Bạn cần đăng nhập để gửi và theo dõi yêu cầu trên ResQ.";
+  }
+
+  if (normalized.includes("phương tiện") || normalized.includes("vehicle")) {
+    return "ResQ chưa lưu được phương tiện này. Hãy kiểm tra thông tin xe rồi thử lại.";
+  }
+
+  if (normalized.includes("khách hàng")) {
+    return "Chỉ tài khoản khách hàng mới có thể tạo yêu cầu cứu hộ.";
+  }
+
+  if (normalized.includes("fixer")) {
+    return "Fixer chưa thể nhận hoặc cập nhật đơn này. Hãy tải lại dữ liệu rồi thử lại.";
+  }
+
+  return message;
+}

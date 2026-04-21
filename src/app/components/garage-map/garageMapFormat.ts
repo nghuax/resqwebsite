@@ -5,15 +5,15 @@ export function formatGarageCategoryLabel(
   isEnglish: boolean,
 ) {
   if (category === "car") {
-    return isEnglish ? "Car Garage" : "Garage o to";
+    return isEnglish ? "Car Garage" : "Garage ô tô";
   }
 
-  return isEnglish ? "Motorcycle Garage" : "Garage xe may";
+  return isEnglish ? "Motorcycle Garage" : "Garage xe máy";
 }
 
 export function formatReviewCount(value: number, isEnglish: boolean) {
   const formatted = new Intl.NumberFormat(isEnglish ? "en-US" : "vi-VN").format(value);
-  return isEnglish ? `${formatted} reviews` : `${formatted} danh gia`;
+  return isEnglish ? `${formatted} reviews` : `${formatted} đánh giá`;
 }
 
 export function formatRatingCopy(
@@ -24,7 +24,7 @@ export function formatRatingCopy(
     return garage.rating.toFixed(1);
   }
 
-  return isEnglish ? "No public rating" : "Chua co diem danh gia";
+  return isEnglish ? "No public rating" : "Chưa có điểm đánh giá";
 }
 
 export function formatReviewCopy(
@@ -35,21 +35,21 @@ export function formatReviewCopy(
     return formatReviewCount(garage.reviewCount, isEnglish);
   }
 
-  return isEnglish ? "No review count yet" : "Chua co so luong danh gia";
+  return isEnglish ? "No review count yet" : "Chưa có số lượng đánh giá";
 }
 
 export function formatPhoneCopy(
   garage: GarageRecord,
   isEnglish: boolean,
 ) {
-  return garage.phone || (isEnglish ? "Phone not listed" : "Chua co so dien thoai");
+  return garage.phone || (isEnglish ? "Phone not listed" : "Chưa có số điện thoại");
 }
 
 export function formatAddressCopy(
   garage: GarageRecord,
   isEnglish: boolean,
 ) {
-  return garage.address || (isEnglish ? "Location shown on the map" : "Vi tri da hien tren ban do");
+  return garage.address || (isEnglish ? "Location shown on the map" : "Vị trí đã hiện trên bản đồ");
 }
 
 export function formatOpeningHoursCopy(
@@ -60,7 +60,7 @@ export function formatOpeningHoursCopy(
     return garage.openingHours;
   }
 
-  return isEnglish ? "Hours not listed" : "Chua co gio mo cua";
+  return isEnglish ? "Hours not listed" : "Chưa có giờ mở cửa";
 }
 
 export function getGarageStatusCopy(
@@ -68,12 +68,12 @@ export function getGarageStatusCopy(
   isEnglish: boolean,
 ) {
   if (garage.isOpen === true) {
-    return isEnglish ? "Open now" : "Dang mo cua";
+    return isEnglish ? "Open now" : "Đang mở cửa";
   }
 
   if (garage.isOpen === false) {
-    return isEnglish ? "Closed now" : "Dang dong cua";
+    return isEnglish ? "Closed now" : "Đang đóng cửa";
   }
 
-  return isEnglish ? "Hours unavailable" : "Chua ro gio mo cua";
+  return isEnglish ? "Hours unavailable" : "Chưa rõ giờ mở cửa";
 }

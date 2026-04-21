@@ -40,17 +40,17 @@ function getProviderLabel(provider: GarageDataProvider | undefined, isEnglish: b
     return isEnglish ? "OpenStreetMap live" : "OpenStreetMap live";
   }
 
-  return isEnglish ? "Curated ResQ data" : "Du lieu ResQ da duyet";
+  return isEnglish ? "Curated ResQ data" : "Dữ liệu ResQ đã duyệt";
 }
 
 function formatDistanceLabel(distanceMeters: number, isEnglish: boolean) {
   if (distanceMeters < 1000) {
     const rounded = Math.round(distanceMeters);
-    return isEnglish ? `${rounded} m away` : `${rounded} m cach ban`;
+    return isEnglish ? `${rounded} m away` : `${rounded} m cách bạn`;
   }
 
   const rounded = (distanceMeters / 1000).toFixed(distanceMeters >= 10_000 ? 0 : 1);
-  return isEnglish ? `${rounded} km away` : `${rounded} km cach ban`;
+  return isEnglish ? `${rounded} km away` : `${rounded} km cách bạn`;
 }
 
 function compareSmart(left: GarageRecord, right: GarageRecord) {
@@ -266,8 +266,8 @@ export default function GarageMapPage() {
   const providerLabel = getProviderLabel(data?.provider, isEnglish);
   const visibleLabel =
     activeCategory === "car"
-      ? t(isEnglish, "Garage o to", "Car garages")
-      : t(isEnglish, "Garage xe may", "Motorcycle garages");
+      ? t(isEnglish, "Garage ô tô", "Car garages")
+      : t(isEnglish, "Garage xe máy", "Motorcycle garages");
 
   return (
     <div className="relative isolate min-h-[calc(100vh-76px)] overflow-hidden bg-[#0f1318] sm:min-h-[calc(100vh-76px)] lg:min-h-[calc(100vh-88px)]">
@@ -347,12 +347,12 @@ export default function GarageMapPage() {
               <LoaderCircle size={18} className="animate-spin text-[#ee3224]" />
               <div>
                 <p className="resq-eyebrow text-[#ee3224]">
-                  {t(isEnglish, "Dang tai garage", "Loading garages")}
+                  {t(isEnglish, "Đang tải garage", "Loading garages")}
                 </p>
                 <p className="resq-body mt-2 text-[14px] leading-[22px] text-[#4e5766]">
                   {t(
                     isEnglish,
-                    "Dang khoi tao man hinh ban do song va dua cac garage vao giao dien ResQ.",
+                    "Đang khởi tạo màn hình bản đồ sống và đưa các garage vào giao diện ResQ.",
                     "Setting up the live map scene and plotting garages into ResQ.",
                   )}
                 </p>
@@ -369,7 +369,7 @@ export default function GarageMapPage() {
               <TriangleAlert size={20} className="text-[#ee3224]" />
             </div>
             <h2 className="resq-display mt-4 text-[28px] leading-[0.96] font-[700] text-[#080b0d]">
-              {t(isEnglish, "Ban do chua san sang", "Map unavailable")}
+              {t(isEnglish, "Bản đồ chưa sẵn sàng", "Map unavailable")}
             </h2>
             <p className="resq-body mt-3 text-[14px] leading-[22px] text-[#4e5766]">
               {sceneError}
@@ -379,7 +379,7 @@ export default function GarageMapPage() {
               onClick={reload}
               className="resq-button-pill resq-button-pill--primary mt-5 px-5 py-3"
             >
-              {t(isEnglish, "Thu lai", "Retry")}
+              {t(isEnglish, "Thử lại", "Retry")}
             </button>
           </div>
         </SceneOverlay>
@@ -393,19 +393,19 @@ export default function GarageMapPage() {
             </div>
             <h2 className="resq-display mt-4 text-[28px] leading-[0.96] font-[700] text-[#080b0d]">
               {searchTerm.trim()
-                ? t(isEnglish, "Khong tim thay garage", "No garages match this search")
-                : t(isEnglish, "Chua co garage hien thi", "No garages available right now")}
+                ? t(isEnglish, "Không tìm thấy garage", "No garages match this search")
+                : t(isEnglish, "Chưa có garage hiển thị", "No garages available right now")}
             </h2>
             <p className="resq-body mt-3 text-[14px] leading-[22px] text-[#4e5766]">
               {searchTerm.trim()
                 ? t(
                     isEnglish,
-                    "Thu ten khac, doi danh muc, hoac xoa tim kiem de xem lai toan bo ket qua.",
+                    "Thử tên khác, đổi danh mục, hoặc xóa tìm kiếm để xem lại toàn bộ kết quả.",
                     "Try another name, change category, or clear the search to bring all results back.",
                   )
                 : t(
                     isEnglish,
-                    "He thong ban do da san sang, nhung hien tai chua co garage phu hop cho bo loc nay.",
+                    "Hệ thống bản đồ đã sẵn sàng, nhưng hiện tại chưa có garage phù hợp cho bộ lọc này.",
                     "The map scene is ready, but there are no garages for the current filters yet.",
                   )}
             </p>

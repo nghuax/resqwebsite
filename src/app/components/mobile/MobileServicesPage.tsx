@@ -33,6 +33,7 @@ import {
 import { VehicleFormModal } from "../vehicles/VehicleFormModal";
 import { useAuth } from "../AuthContext";
 import { useLanguage } from "../LanguageContext";
+import { formatWorkflowError } from "@/utils/supabase/requestWorkflow";
 
 const mono = "font-['IBM_Plex_Mono',monospace]";
 
@@ -54,6 +55,7 @@ function ServiceRequestSheet({
   onClose: () => void;
 }) {
   const { vehicles, addVehicle, setActiveRequest } = useResQStore();
+  const { user, isLoggedIn } = useAuth();
   const { language } = useLanguage();
   const isEnglish = language === "en";
   const navigate = useNavigate();
@@ -72,6 +74,7 @@ function ServiceRequestSheet({
   const [vehicleModalTypes, setVehicleModalTypes] = useState<VehicleType[] | null>(null);
   const [step, setStep] = useState<SheetStep>("select");
   const [submittedRequest, setSubmittedRequest] = useState<ActiveResQRequest | null>(null);
+  const [submitError, setSubmitError] = useState("");
 
   const selectedVehicle =
     availableVehicles.find((vehicle) => vehicle.id === selectedVehicleId) ?? defaultVehicle;
@@ -90,17 +93,20 @@ function ServiceRequestSheet({
     }
   }, [availableVehicles, defaultVehicle, selectedVehicleId]);
 
-  useEffect(() => {
-    if (step === "sending") {
-      const timer = setTimeout(() => setStep("done"), 2200);
-      return () => clearTimeout(timer);
-    }
-  }, [step]);
-
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!selectedVehicle || !selectedLocation) {
       return;
     }
+
+    if (!isLoggedIn || user?.role !== "user") {
+      navigate(
+        `/dang-nhap?role=user&redirect=${encodeURIComponent("/dich-vu")}`,
+      );
+      return;
+    }
+
+    setSubmitError("");
+    setStep("sending");
 
     const draft = createRequestDraft({
       serviceId: service.id,
@@ -114,9 +120,14 @@ function ServiceRequestSheet({
       notes,
     });
 
-    setSubmittedRequest(draft);
-    setActiveRequest(draft);
-    setStep("sending");
+    try {
+      const syncedRequest = await setActiveRequest(draft);
+      setSubmittedRequest(syncedRequest ?? draft);
+      setStep("done");
+    } catch (error) {
+      setSubmitError(formatWorkflowError(error));
+      setStep("select");
+    }
   };
 
   if (step === "sending") {
@@ -478,7 +489,7 @@ function ServiceRequestSheet({
           </div>
 
           <button
-            onClick={handleSubmit}
+            onClick={() => void handleSubmit()}
             disabled={!selectedVehicle || !selectedLocation || !locationLabel.trim()}
             className="flex w-full items-center justify-center gap-2 rounded-[18px] bg-[#ee3224] px-4 py-3 text-white disabled:bg-[#f3b3ad]"
           >
@@ -487,6 +498,13 @@ function ServiceRequestSheet({
             </span>
             <ChevronRight size={14} />
           </button>
+          {submitError && (
+            <div className="rounded-[18px] border border-[rgba(238,50,36,0.18)] bg-[rgba(238,50,36,0.06)] px-4 py-3">
+              <p className={`${mono} text-[11px] leading-[19px] text-[#b42318]`}>
+                {submitError}
+              </p>
+            </div>
+          )}
         </div>
 
         {vehicleModalTypes && (

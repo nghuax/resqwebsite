@@ -38,6 +38,7 @@ import {
 import { VehicleFormModal } from "./vehicles/VehicleFormModal";
 import { useAuth } from "./AuthContext";
 import { useLanguage } from "./LanguageContext";
+import { formatWorkflowError } from "@/utils/supabase/requestWorkflow";
 import {
   resqServiceFilters as filters,
   resqServices as allServices,
@@ -52,6 +53,7 @@ type ModalStep = "select" | "sending" | "done";
 
 function ServiceModal({ service, onClose }: { service: Service; onClose: () => void }) {
   const { vehicles, addVehicle, setActiveRequest } = useResQStore();
+  const { user, isLoggedIn } = useAuth();
   const { language } = useLanguage();
   const isEnglish = language === "en";
   const [selectedVehicle, setSelectedVehicle] = useState("");
@@ -61,6 +63,7 @@ function ServiceModal({ service, onClose }: { service: Service; onClose: () => v
   const [locationLabel, setLocationLabel] = useState("");
   const [vehicleModalTypes, setVehicleModalTypes] = useState<VehicleType[] | null>(null);
   const [submittedRequest, setSubmittedRequest] = useState<ActiveResQRequest | null>(null);
+  const [submitError, setSubmitError] = useState("");
   const navigate = useNavigate();
   const allowedVehicleTypes = getAllowedVehicleTypes(service.types);
   const availableVehicles = vehicles.filter((vehicle) =>
@@ -78,13 +81,6 @@ function ServiceModal({ service, onClose }: { service: Service; onClose: () => v
       setSelectedVehicle(defaultVehicle?.id ?? "");
     }
   }, [availableVehicles, defaultVehicle, selectedVehicle]);
-
-  useEffect(() => {
-    if (step === "sending") {
-      const timer = setTimeout(() => setStep("done"), 2500);
-      return () => clearTimeout(timer);
-    }
-  }, [step]);
 
   const locationSummary =
     locationLabel.trim() || selectedLocation?.address || (isEnglish ? "Detecting location" : "Đang xác định vị trí");
@@ -119,10 +115,20 @@ function ServiceModal({ service, onClose }: { service: Service; onClose: () => v
     setVehicleModalTypes(null);
   };
 
-  const handleSubmitRequest = () => {
+  const handleSubmitRequest = async () => {
     if (!selectedVehicleData || !selectedLocation) {
       return;
     }
+
+    if (!isLoggedIn || user?.role !== "user") {
+      navigate(
+        `/dang-nhap?role=user&redirect=${encodeURIComponent("/dich-vu")}`,
+      );
+      return;
+    }
+
+    setSubmitError("");
+    setStep("sending");
 
     const nextRequest = createRequestDraft({
       serviceId: service.id,
@@ -136,9 +142,14 @@ function ServiceModal({ service, onClose }: { service: Service; onClose: () => v
       notes,
     });
 
-    setSubmittedRequest(nextRequest);
-    setActiveRequest(nextRequest);
-    setStep("sending");
+    try {
+      const syncedRequest = await setActiveRequest(nextRequest);
+      setSubmittedRequest(syncedRequest ?? nextRequest);
+      setStep("done");
+    } catch (error) {
+      setSubmitError(formatWorkflowError(error));
+      setStep("select");
+    }
   };
 
   if (step === "sending") {
@@ -539,7 +550,7 @@ function ServiceModal({ service, onClose }: { service: Service; onClose: () => v
           </div>
 
           <button
-            onClick={handleSubmitRequest}
+            onClick={() => void handleSubmitRequest()}
             className="flex h-[52px] w-full items-center justify-center gap-[8px] rounded-[10px] border-0 bg-[#ee3224] cursor-pointer transition-colors hover:bg-[#d42b1e] disabled:cursor-not-allowed disabled:bg-[#f3b3ad]"
             disabled={!locationLabel.trim() || !selectedLocation || !selectedVehicleData}
           >
@@ -548,6 +559,13 @@ function ServiceModal({ service, onClose }: { service: Service; onClose: () => v
             </span>
             <ChevronRight size={20} className="text-white" />
           </button>
+          {submitError && (
+            <div className="mt-3 rounded-[12px] border border-[rgba(238,50,36,0.18)] bg-[rgba(238,50,36,0.06)] px-4 py-3">
+              <p className={`${mono} text-[12px] leading-[20px] text-[#b42318]`}>
+                {submitError}
+              </p>
+            </div>
+          )}
         </div>
       </div>
 

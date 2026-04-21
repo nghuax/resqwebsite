@@ -72,7 +72,7 @@ export function GarageCard({
           </span>
           <div className="min-w-0">
             <p className={`${mono} text-[10px] uppercase tracking-[0.16em] text-[#99a1af]`}>
-              {isEnglish ? "Address" : "Dia chi"}
+              {isEnglish ? "Address" : "Địa chỉ"}
             </p>
             <p className={`${mono} mt-2 text-[12px] leading-[20px] text-[#080b0d]`}>
               {formatAddressCopy(garage, isEnglish)}
@@ -84,7 +84,7 @@ export function GarageCard({
       <div className="mt-3 grid gap-3 sm:grid-cols-3">
         <div className="rounded-[18px] bg-[#faf8f5] px-4 py-4">
           <p className={`${mono} text-[10px] uppercase tracking-[0.16em] text-[#99a1af]`}>
-            {isEnglish ? "Phone" : "Dien thoai"}
+            {isEnglish ? "Phone" : "Điện thoại"}
           </p>
           <p className={`${mono} mt-2 text-[12px] leading-[20px] text-[#080b0d]`}>
             {formatPhoneCopy(garage, isEnglish)}
@@ -92,7 +92,7 @@ export function GarageCard({
         </div>
         <div className="rounded-[18px] bg-[#faf8f5] px-4 py-4">
           <p className={`${mono} text-[10px] uppercase tracking-[0.16em] text-[#99a1af]`}>
-            {isEnglish ? "Rating" : "Danh gia"}
+            {isEnglish ? "Rating" : "Đánh giá"}
           </p>
           <p className={`${mono} mt-2 text-[12px] leading-[20px] text-[#080b0d]`}>
             {formatRatingCopy(garage, isEnglish)}
@@ -100,7 +100,7 @@ export function GarageCard({
         </div>
         <div className="rounded-[18px] bg-[#faf8f5] px-4 py-4">
           <p className={`${mono} text-[10px] uppercase tracking-[0.16em] text-[#99a1af]`}>
-            {isEnglish ? "Reviews" : "Luot danh gia"}
+            {isEnglish ? "Reviews" : "Lượt đánh giá"}
           </p>
           <p className={`${mono} mt-2 text-[12px] leading-[20px] text-[#080b0d]`}>
             {formatReviewCopy(garage, isEnglish)}
@@ -115,10 +115,10 @@ export function GarageCard({
             : isSelected
               ? isEnglish
                 ? "Selected on map"
-                : "Dang duoc chon tren ban do"
+                : "Đang được chọn trên bản đồ"
               : isEnglish
                 ? "Tap to focus the map"
-                : "Cham de dua ban do toi garage nay"}
+                : "Chạm để đưa bản đồ tới garage này"}
         </span>
       </div>
 
@@ -132,7 +132,7 @@ export function GarageCard({
           className="resq-button-pill resq-button-pill--primary px-4 py-2"
         >
           <span className={`${mono} text-[11px] font-[500] uppercase tracking-[0.16em] text-white`}>
-            {isEnglish ? "Details" : "Chi tiet"}
+            {isEnglish ? "Details" : "Chi tiết"}
           </span>
         </button>
 
@@ -144,7 +144,7 @@ export function GarageCard({
           >
             <PhoneCall size={14} className="text-[#ee3224]" />
             <span className={`${mono} text-[11px] font-[500] uppercase tracking-[0.16em] text-[#080b0d]`}>
-              {isEnglish ? "Call" : "Goi"}
+              {isEnglish ? "Call" : "Gọi"}
             </span>
           </a>
         )}
@@ -158,7 +158,7 @@ export function GarageCard({
         >
           <ExternalLink size={14} className="text-[#ee3224]" />
           <span className={`${mono} text-[11px] font-[500] uppercase tracking-[0.16em] text-[#080b0d]`}>
-            {isEnglish ? "Directions" : "Chi duong"}
+            {isEnglish ? "Directions" : "Chỉ đường"}
           </span>
         </a>
       </div>

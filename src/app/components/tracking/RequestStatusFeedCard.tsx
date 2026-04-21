@@ -1,10 +1,12 @@
 import { LoaderCircle, Radio } from "lucide-react";
+import { useLanguage } from "../LanguageContext";
+import { localizeRequestStatus, localizeStatusEventDetail, t } from "../localization";
 import { useRequestStatusEvents } from "./requestStatusEvents";
 
 const mono = "font-['IBM_Plex_Mono',monospace]";
 
-function formatStatusEventTime(value: string) {
-  return new Date(value).toLocaleString("vi-VN", {
+function formatStatusEventTime(value: string, isEnglish: boolean) {
+  return new Date(value).toLocaleString(isEnglish ? "en-US" : "vi-VN", {
     hour: "2-digit",
     minute: "2-digit",
     day: "2-digit",
@@ -19,6 +21,8 @@ export function RequestStatusFeedCard({
   requestId: string | null;
   compact?: boolean;
 }) {
+  const { language } = useLanguage();
+  const isEnglish = language === "en";
   const { events, isLoading } = useRequestStatusEvents(requestId);
   const visibleEvents = [...events].reverse().slice(0, compact ? 3 : 5);
 
@@ -34,7 +38,7 @@ export function RequestStatusFeedCard({
             Live updates
           </p>
           <h3 className={`mt-2 text-[#080b0d] ${compact ? "font-['Syne',sans-serif] text-[24px] leading-[1] font-[700] tracking-[-0.04em]" : `${mono} text-[20px] font-[700]`}`}>
-            Cập nhật trạng thái
+            {t(isEnglish, "Cập nhật trạng thái", "Status updates")}
           </h3>
         </div>
         <div className="flex size-[40px] items-center justify-center rounded-[16px] bg-[rgba(238,50,36,0.08)]">
@@ -46,7 +50,11 @@ export function RequestStatusFeedCard({
         <div className="mt-4 flex items-center gap-3 rounded-[18px] bg-[#faf8f5] px-4 py-4">
           <LoaderCircle size={16} className="animate-spin text-[#ee3224]" />
           <p className={`${mono} text-[12px] text-[#667085]`}>
-            Đang đồng bộ nhật ký trạng thái từ Supabase...
+            {t(
+              isEnglish,
+              "Đang đồng bộ nhật ký trạng thái từ Supabase...",
+              "Syncing status history from Supabase...",
+            )}
           </p>
         </div>
       ) : visibleEvents.length > 0 ? (
@@ -56,14 +64,14 @@ export function RequestStatusFeedCard({
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className={`${mono} text-[12px] font-[500] text-[#080b0d]`}>
-                    {event.status}
+                    {localizeRequestStatus(event.status, isEnglish)}
                   </p>
                   <p className={`${mono} mt-2 text-[11px] leading-[19px] text-[#667085]`}>
-                    {event.detail || "ResQ đã ghi nhận thay đổi mới cho yêu cầu này."}
+                    {localizeStatusEventDetail(event, isEnglish)}
                   </p>
                 </div>
                 <span className={`${mono} shrink-0 text-[10px] uppercase tracking-[0.16em] text-[#99a1af]`}>
-                  {formatStatusEventTime(event.createdAt)}
+                  {formatStatusEventTime(event.createdAt, isEnglish)}
                 </span>
               </div>
             </div>
@@ -72,7 +80,11 @@ export function RequestStatusFeedCard({
       ) : (
         <div className="mt-4 rounded-[18px] bg-[#faf8f5] px-4 py-4">
           <p className={`${mono} text-[12px] leading-[20px] text-[#667085]`}>
-            Chưa có cập nhật nào trong nhật ký trạng thái cho yêu cầu này.
+            {t(
+              isEnglish,
+              "Chưa có cập nhật nào trong nhật ký trạng thái cho yêu cầu này.",
+              "No status updates have been recorded for this request yet.",
+            )}
           </p>
         </div>
       )}

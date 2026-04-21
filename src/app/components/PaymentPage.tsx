@@ -21,6 +21,13 @@ import {
   type ActiveResQRequest,
   type ResQHistoryItem,
 } from "./resqStore";
+import { useLanguage } from "./LanguageContext";
+import {
+  localizeFixerMeta,
+  localizeServiceTitle,
+  localizeVehicleType,
+  t,
+} from "./localization";
 import { HO_CHI_MINH_CITY_FALLBACK } from "./tracking/tracking-utils";
 
 const mono = "font-['IBM_Plex_Mono',monospace]";
@@ -28,10 +35,10 @@ const pagePadding = "px-5 sm:px-8 lg:px-[84px] xl:px-[120px]";
 const pageShell = "mx-auto w-full max-w-[1240px]";
 
 const paymentMethods = [
-  { id: "momo", name: "MoMo", desc: "Ví điện tử MoMo", icon: Smartphone },
-  { id: "zalo", name: "ZaloPay", desc: "Ví điện tử ZaloPay", icon: Smartphone },
-  { id: "card", name: "Thẻ ngân hàng", desc: "Visa, Mastercard, JCB", icon: CreditCard },
-  { id: "cash", name: "Tiền mặt", desc: "Thanh toán trực tiếp cho Fixer", icon: Banknote },
+  { id: "momo", name: "MoMo", nameEn: "MoMo", desc: "Ví điện tử MoMo", descEn: "MoMo e-wallet", icon: Smartphone },
+  { id: "zalo", name: "ZaloPay", nameEn: "ZaloPay", desc: "Ví điện tử ZaloPay", descEn: "ZaloPay e-wallet", icon: Smartphone },
+  { id: "card", name: "Thẻ ngân hàng", nameEn: "Bank card", desc: "Visa, Mastercard, JCB", descEn: "Visa, Mastercard, JCB", icon: CreditCard },
+  { id: "cash", name: "Tiền mặt", nameEn: "Cash", desc: "Thanh toán trực tiếp cho Fixer", descEn: "Pay the fixer directly", icon: Banknote },
 ];
 
 type Step = "select" | "card-input" | "confirm" | "processing" | "success" | "failed";
@@ -102,7 +109,14 @@ function getFixerInitials(name: string) {
     .join("");
 }
 
+function getPaymentMethodName(methodId: string, isEnglish: boolean) {
+  const method = paymentMethods.find((item) => item.id === methodId);
+  return method ? t(isEnglish, method.name, method.nameEn) : methodId;
+}
+
 export default function PaymentPage() {
+  const { language } = useLanguage();
+  const isEnglish = language === "en";
   const { activeRequest, requestHistory, completeActiveRequest, isHydrating } =
     useResQStore();
   const request = resolvePaymentRequest(activeRequest, requestHistory);
@@ -120,6 +134,7 @@ export default function PaymentPage() {
   const [copied, setCopied] = useState(false);
   const navigate = useNavigate();
   const currentTotal = applied ? TOTAL : SERVICE_FEE + TRAVEL_FEE;
+  const selectedPaymentMethodName = getPaymentMethodName(selected, isEnglish);
 
   const txnId = "TXN-" + Math.random().toString(36).substring(2, 8).toUpperCase();
   const now = new Date();
@@ -139,7 +154,7 @@ export default function PaymentPage() {
           <div className="mx-auto flex min-h-[60vh] max-w-[420px] flex-col items-center justify-center text-center">
             <Loader2 size={48} className="mb-[20px] animate-spin text-[#ee3224]" />
             <h2 className={`${mono} text-[22px] font-[700] text-[#080b0d]`}>
-              Đang tải chi tiết thanh toán
+              {t(isEnglish, "Đang tải chi tiết thanh toán", "Loading payment details")}
             </h2>
           </div>
         </div>
@@ -156,18 +171,21 @@ export default function PaymentPage() {
               <CreditCard size={34} className="text-[#ee3224]" />
             </div>
             <h2 className={`${mono} mb-[8px] text-[24px] font-[700] text-[#080b0d]`}>
-              Chưa có đơn sẵn sàng để thanh toán
+              {t(isEnglish, "Chưa có đơn sẵn sàng để thanh toán", "No request is ready for payment")}
             </h2>
             <p className={`${mono} mb-[24px] max-w-[420px] text-[14px] leading-[24px] text-[#4a5565]`}>
-              ResQ sẽ hiển thị đúng fixer và chi tiết đơn ngay khi yêu cầu của bạn
-              bước sang giai đoạn cần thanh toán.
+              {t(
+                isEnglish,
+                "ResQ sẽ hiển thị đúng fixer và chi tiết đơn ngay khi yêu cầu của bạn bước sang giai đoạn cần thanh toán.",
+                "ResQ will show the assigned fixer and request details as soon as your request reaches the payment stage.",
+              )}
             </p>
             <Link
               to="/dich-vu?panel=tracking"
               className="inline-flex h-[48px] items-center justify-center rounded-[10px] bg-[#ee3224] px-[28px] no-underline transition-colors hover:bg-[#d42b1e]"
             >
               <span className={`${mono} text-[14px] font-[500] text-white`}>
-                Mở panel theo dõi
+                {t(isEnglish, "Mở panel theo dõi", "Open tracking panel")}
               </span>
             </Link>
           </div>
@@ -178,7 +196,13 @@ export default function PaymentPage() {
 
   const fixerDisplayName = getFixerDisplayName(request);
   const fixerInitials = getFixerInitials(fixerDisplayName);
-  const fixerMeta = request.fixerTeam?.trim() || request.fixerVehicle?.trim() || "Fixer ResQ";
+  const fixerMeta = localizeFixerMeta(
+    request.fixerTeam?.trim() || request.fixerVehicle?.trim() || "Fixer ResQ",
+    isEnglish,
+  );
+  const serviceTitle = localizeServiceTitle(request, isEnglish);
+  const vehicleType = localizeVehicleType(request.vehicleType, isEnglish);
+  const vehicleSummary = `${request.vehicleName} · ${request.vehiclePlate}`;
 
   useEffect(() => {
     if (step === "processing") {
@@ -194,12 +218,11 @@ export default function PaymentPage() {
       return;
     }
 
-    completeActiveRequest({
-      paymentMethod:
-        paymentMethods.find((method) => method.id === selected)?.name ?? selected,
+      completeActiveRequest({
+      paymentMethod: selectedPaymentMethodName,
       totalAmount: formatVND(currentTotal),
     });
-  }, [completeActiveRequest, currentTotal, selected, step]);
+  }, [completeActiveRequest, currentTotal, selectedPaymentMethodName, step]);
 
   const handleApplyCoupon = () => {
     if (coupon.trim().toUpperCase() === "RESQ10K") {
@@ -210,7 +233,13 @@ export default function PaymentPage() {
       setCouponError("");
     } else {
       setApplied(false);
-      setCouponError("Mã giảm giá không hợp lệ hoặc đã hết hạn");
+      setCouponError(
+        t(
+          isEnglish,
+          "Mã giảm giá không hợp lệ hoặc đã hết hạn",
+          "This promo code is invalid or has expired",
+        ),
+      );
     }
   };
 
@@ -249,19 +278,19 @@ export default function PaymentPage() {
           <div className="mx-auto flex min-h-[60vh] max-w-[420px] flex-col items-center justify-center text-center">
             <Loader2 size={56} className="mb-[24px] animate-spin text-[#ee3224]" />
             <h2 className={`${mono} mb-[8px] text-[24px] font-[700] text-[#080b0d]`}>
-              Đang xử lý thanh toán...
+              {t(isEnglish, "Đang xử lý thanh toán...", "Processing payment...")}
             </h2>
             <p className={`${mono} mb-[4px] text-[14px] text-[#a4a4a4]`}>
               {selected === "momo"
-                ? "Đang kết nối với MoMo"
+                ? t(isEnglish, "Đang kết nối với MoMo", "Connecting to MoMo")
                 : selected === "zalo"
-                  ? "Đang kết nối với ZaloPay"
+                  ? t(isEnglish, "Đang kết nối với ZaloPay", "Connecting to ZaloPay")
                   : selected === "card"
-                    ? "Đang xác thực thẻ"
-                    : "Đang xác nhận đơn hàng"}
+                    ? t(isEnglish, "Đang xác thực thẻ", "Verifying card")
+                    : t(isEnglish, "Đang xác nhận đơn hàng", "Confirming the order")}
             </p>
             <p className={`${mono} text-[13px] text-[#a4a4a4]`}>
-              Vui lòng không đóng trang này
+              {t(isEnglish, "Vui lòng không đóng trang này", "Please keep this page open")}
             </p>
           </div>
         </div>
@@ -278,11 +307,14 @@ export default function PaymentPage() {
               <AlertCircle size={36} className="text-[#ee3224]" />
             </div>
             <h2 className={`${mono} mb-[8px] text-[24px] font-[700] text-[#080b0d]`}>
-              Thanh toán thất bại
+              {t(isEnglish, "Thanh toán thất bại", "Payment failed")}
             </h2>
             <p className={`${mono} mb-[32px] max-w-[400px] text-[14px] leading-[24px] text-[#a4a4a4]`}>
-              Giao dịch không thể hoàn tất. Vui lòng kiểm tra lại phương thức thanh
-              toán hoặc thử lại.
+              {t(
+                isEnglish,
+                "Giao dịch không thể hoàn tất. Vui lòng kiểm tra lại phương thức thanh toán hoặc thử lại.",
+                "The transaction could not be completed. Please check the payment method or try again.",
+              )}
             </p>
             <div className="flex w-full flex-col gap-[12px] sm:flex-row sm:justify-center">
               <button
@@ -290,7 +322,7 @@ export default function PaymentPage() {
                 className="h-[48px] rounded-[10px] border border-black bg-white px-[32px] cursor-pointer transition-colors hover:bg-[#f5f5f5]"
               >
                 <span className={`${mono} text-[14px] font-[500] text-[#080b0d]`}>
-                  Đổi phương thức
+                  {t(isEnglish, "Đổi phương thức", "Change method")}
                 </span>
               </button>
               <button
@@ -298,7 +330,7 @@ export default function PaymentPage() {
                 className="h-[48px] rounded-[10px] border-0 bg-[#ee3224] px-[32px] cursor-pointer transition-colors hover:bg-[#d42b1e]"
               >
                 <span className={`${mono} text-[14px] font-[500] text-white`}>
-                  Thử lại
+                  {t(isEnglish, "Thử lại", "Try again")}
                 </span>
               </button>
             </div>
@@ -318,14 +350,14 @@ export default function PaymentPage() {
                 <CheckCircle2 size={36} className="text-[#ee3224]" />
               </div>
               <h2 className={`${mono} mb-[4px] text-[24px] font-[700] text-[#080b0d]`}>
-                Thanh toán thành công!
+                {t(isEnglish, "Thanh toán thành công!", "Payment successful!")}
               </h2>
               <p className={`${mono} text-[14px] text-[#a4a4a4]`}>{timeStr}</p>
             </div>
 
             <div className="mb-[32px] text-center">
-              <p className={`${mono} mb-[4px] text-[13px] text-[#a4a4a4]`}>
-                Số tiền thanh toán
+                <p className={`${mono} mb-[4px] text-[13px] text-[#a4a4a4]`}>
+                {t(isEnglish, "Số tiền thanh toán", "Amount paid")}
               </p>
               <p className={`${mono} text-[36px] font-[700] text-[#ee3224] sm:text-[40px]`}>
                 {formatVND(currentTotal)}
@@ -335,7 +367,7 @@ export default function PaymentPage() {
             <div className="mb-[24px] rounded-[14px] border border-[rgba(4,38,153,0.08)] p-[24px]">
               <div className="mb-[16px] flex flex-col gap-3 border-b border-[rgba(4,38,153,0.08)] pb-[16px] sm:flex-row sm:items-center sm:justify-between">
                 <p className={`${mono} text-[12px] font-[500] uppercase tracking-[0.96px] text-[#a4a4a4]`}>
-                  Hóa đơn
+                  {t(isEnglish, "Hóa đơn", "Receipt")}
                 </p>
                 <button
                   onClick={handleCopyTxn}
@@ -351,18 +383,18 @@ export default function PaymentPage() {
                       copied ? "text-[#ee3224]" : "text-[#a4a4a4]"
                     }`}
                   >
-                    {copied ? "Đã copy" : txnId}
+                    {copied ? t(isEnglish, "Đã copy", "Copied") : txnId}
                   </span>
                 </button>
               </div>
 
               <div className="mb-[16px] space-y-[12px]">
                 {[
-                  ["Dịch vụ", request.serviceTitle],
-                  ["Xe", `${request.vehicleName} · ${request.vehiclePlate}`],
+                  [t(isEnglish, "Dịch vụ", "Service"), serviceTitle],
+                  [t(isEnglish, "Xe", "Vehicle"), `${vehicleSummary} · ${vehicleType}`],
                   ["Fixer", fixerDisplayName],
-                  ["Đội hỗ trợ", fixerMeta],
-                  ["Phương thức", paymentMethods.find((method) => method.id === selected)?.name || ""],
+                  [t(isEnglish, "Đội hỗ trợ", "Support team"), fixerMeta],
+                  [t(isEnglish, "Phương thức", "Method"), selectedPaymentMethodName],
                 ].map(([key, value]) => (
                   <div key={key} className="flex justify-between gap-3">
                     <span className={`${mono} text-[13px] text-[#a4a4a4]`}>{key}</span>
@@ -376,7 +408,7 @@ export default function PaymentPage() {
               <div className="space-y-[8px] border-t border-[rgba(4,38,153,0.08)] pt-[12px]">
                 <div className="flex justify-between gap-3">
                   <span className={`${mono} text-[13px] text-[#080b0d]`}>
-                    {request.serviceTitle}
+                    {serviceTitle}
                   </span>
                   <span className={`${mono} text-[13px] font-[500] text-[#080b0d]`}>
                     {formatVND(SERVICE_FEE)}
@@ -384,7 +416,7 @@ export default function PaymentPage() {
                 </div>
                 <div className="flex justify-between gap-3">
                   <span className={`${mono} text-[13px] text-[#080b0d]`}>
-                    Phí di chuyển (3.2 km)
+                    {t(isEnglish, "Phí di chuyển (3.2 km)", "Travel fee (3.2 km)")}
                   </span>
                   <span className={`${mono} text-[13px] font-[500] text-[#080b0d]`}>
                     {formatVND(TRAVEL_FEE)}
@@ -393,7 +425,7 @@ export default function PaymentPage() {
                 {applied && (
                   <div className="flex justify-between gap-3">
                     <span className={`${mono} text-[13px] text-[#ee3224]`}>
-                      Giảm giá (RESQ10K)
+                      {t(isEnglish, "Giảm giá (RESQ10K)", "Discount (RESQ10K)")}
                     </span>
                     <span className={`${mono} text-[13px] font-[500] text-[#ee3224]`}>
                       -{formatVND(DISCOUNT)}
@@ -402,7 +434,7 @@ export default function PaymentPage() {
                 )}
                 <div className="flex items-center justify-between gap-3 border-t border-[rgba(4,38,153,0.08)] pt-[12px]">
                   <span className={`${mono} text-[14px] font-[500] text-[#080b0d]`}>
-                    Tổng cộng
+                    {t(isEnglish, "Tổng cộng", "Total")}
                   </span>
                   <span className={`${mono} text-[20px] font-[700] text-[#ee3224]`}>
                     {formatVND(currentTotal)}
@@ -413,7 +445,7 @@ export default function PaymentPage() {
 
             <div className="mb-[24px] rounded-[14px] border border-[rgba(4,38,153,0.08)] p-[24px]">
               <p className={`${mono} mb-[16px] text-[12px] font-[500] uppercase tracking-[0.96px] text-[#a4a4a4]`}>
-                Đánh giá Fixer
+                {t(isEnglish, "Đánh giá Fixer", "Rate your fixer")}
               </p>
               <div className="mb-[16px] flex items-center gap-[12px]">
                 <div className="flex size-[44px] shrink-0 items-center justify-center rounded-full bg-[#ee3224]">
@@ -453,15 +485,15 @@ export default function PaymentPage() {
               {rating > 0 && (
                 <p className={`${mono} mb-[16px] text-[13px] text-[#a4a4a4]`}>
                   {rating >= 4
-                    ? "Cảm ơn bạn đã đánh giá tốt!"
+                    ? t(isEnglish, "Cảm ơn bạn đã đánh giá tốt!", "Thanks for the great rating!")
                     : rating >= 2
-                      ? "Cảm ơn phản hồi của bạn."
-                      : "Chúng tôi xin lỗi về trải nghiệm chưa tốt."}
+                      ? t(isEnglish, "Cảm ơn phản hồi của bạn.", "Thanks for your feedback.")
+                      : t(isEnglish, "Chúng tôi xin lỗi về trải nghiệm chưa tốt.", "We are sorry the experience was not good.")}
                 </p>
               )}
 
               <p className={`${mono} mb-[8px] text-[12px] font-[500] uppercase tracking-[0.96px] text-[#a4a4a4]`}>
-                Tip cho Fixer (tùy chọn)
+                {t(isEnglish, "Tip cho Fixer (tùy chọn)", "Tip your fixer (optional)")}
               </p>
               <div className="flex flex-wrap gap-[8px]">
                 {[5000, 10000, 20000, 50000].map((amount) => (
@@ -486,7 +518,7 @@ export default function PaymentPage() {
               <button className="flex h-[48px] flex-1 items-center justify-center gap-[6px] rounded-[10px] border border-black bg-white cursor-pointer transition-colors hover:bg-[#f5f5f5]">
                 <Download size={16} className="text-[#080b0d]" />
                 <span className={`${mono} text-[14px] font-[500] text-[#080b0d]`}>
-                  Tải hóa đơn
+                  {t(isEnglish, "Tải hóa đơn", "Download receipt")}
                 </span>
               </button>
               <button
@@ -494,7 +526,7 @@ export default function PaymentPage() {
                 className="flex h-[48px] flex-[1.4] items-center justify-center gap-[8px] rounded-[10px] border-0 bg-[#ee3224] cursor-pointer transition-colors hover:bg-[#d42b1e]"
               >
                 <span className={`${mono} text-[14px] font-[500] text-white`}>
-                  Về trang chủ
+                  {t(isEnglish, "Về trang chủ", "Back to home")}
                 </span>
                 <ChevronRight size={18} className="text-white" />
               </button>
@@ -514,14 +546,14 @@ export default function PaymentPage() {
               onClick={() => setStep(selected === "card" ? "card-input" : "select")}
               className={`mb-[16px] inline-flex items-center gap-[4px] border-0 bg-transparent p-0 text-[13px] font-[500] text-[#a4a4a4] cursor-pointer transition-colors hover:text-[#080b0d] ${mono}`}
             >
-              <ChevronLeft size={16} /> Quay lại
+              <ChevronLeft size={16} /> {t(isEnglish, "Quay lại", "Back")}
             </button>
 
             <h2 className={`${mono} mb-[8px] text-center text-[24px] font-[700] text-[#080b0d]`}>
-              Xác nhận thanh toán
+              {t(isEnglish, "Xác nhận thanh toán", "Confirm payment")}
             </h2>
             <p className={`${mono} mb-[32px] text-center text-[14px] text-[#a4a4a4]`}>
-              Kiểm tra thông tin trước khi thanh toán
+              {t(isEnglish, "Kiểm tra thông tin trước khi thanh toán", "Review the details before paying")}
             </p>
 
             <div className="mb-[24px] rounded-[14px] border border-[rgba(4,38,153,0.08)] p-[24px]">
@@ -531,7 +563,7 @@ export default function PaymentPage() {
                 </div>
                 <div>
                   <p className={`${mono} text-[14px] font-[500] text-[#080b0d]`}>
-                    {request.serviceTitle}
+                    {serviceTitle}
                   </p>
                   <p className={`${mono} text-[12px] text-[#a4a4a4]`}>
                     {request.vehicleName} · {request.vehiclePlate}
@@ -541,9 +573,9 @@ export default function PaymentPage() {
 
               <div className="mb-[16px] space-y-[10px]">
                 {[
-                  ["Phương thức", paymentMethods.find((method) => method.id === selected)?.name || ""],
-                  [request.serviceTitle, formatVND(SERVICE_FEE)],
-                  ["Phí di chuyển (3.2 km)", formatVND(TRAVEL_FEE)],
+                  [t(isEnglish, "Phương thức", "Method"), selectedPaymentMethodName],
+                  [serviceTitle, formatVND(SERVICE_FEE)],
+                  [t(isEnglish, "Phí di chuyển (3.2 km)", "Travel fee (3.2 km)"), formatVND(TRAVEL_FEE)],
                 ].map(([key, value]) => (
                   <div key={key} className="flex justify-between gap-3">
                     <span className={`${mono} text-[13px] text-[#080b0d]`}>{key}</span>
@@ -555,7 +587,7 @@ export default function PaymentPage() {
                 {applied && (
                   <div className="flex justify-between gap-3">
                     <span className={`${mono} text-[13px] text-[#ee3224]`}>
-                      Giảm giá (RESQ10K)
+                      {t(isEnglish, "Giảm giá (RESQ10K)", "Discount (RESQ10K)")}
                     </span>
                     <span className={`${mono} text-[13px] font-[500] text-[#ee3224]`}>
                       -{formatVND(DISCOUNT)}
@@ -567,7 +599,7 @@ export default function PaymentPage() {
               <div className="border-t border-[rgba(4,38,153,0.08)] pt-[16px]">
                 <div className="flex items-center justify-between gap-3">
                   <span className={`${mono} text-[14px] font-[500] text-[#080b0d]`}>
-                    Tổng cộng
+                    {t(isEnglish, "Tổng cộng", "Total")}
                   </span>
                   <span className={`${mono} text-[24px] font-[700] text-[#ee3224]`}>
                     {formatVND(currentTotal)}
@@ -579,7 +611,11 @@ export default function PaymentPage() {
             <div className="mb-[24px] flex items-center gap-[8px] rounded-[10px] bg-[#f9fafb] p-[12px]">
               <Shield size={16} className="shrink-0 text-[#a4a4a4]" />
               <p className={`${mono} text-[12px] text-[#a4a4a4]`}>
-                Giao dịch được bảo mật bởi ResQ. Thông tin thanh toán không được lưu trữ.
+                {t(
+                  isEnglish,
+                  "Giao dịch được bảo mật bởi ResQ. Thông tin thanh toán không được lưu trữ.",
+                  "The transaction is secured by ResQ. Payment information is not stored.",
+                )}
               </p>
             </div>
 
@@ -589,7 +625,7 @@ export default function PaymentPage() {
                 className="h-[48px] flex-1 rounded-[10px] border border-black bg-white cursor-pointer transition-colors hover:bg-[#f5f5f5]"
               >
                 <span className={`${mono} text-[14px] font-[500] text-[#080b0d]`}>
-                  Hủy
+                  {t(isEnglish, "Hủy", "Cancel")}
                 </span>
               </button>
               <button
@@ -597,7 +633,7 @@ export default function PaymentPage() {
                 className="h-[48px] flex-[1.4] rounded-[10px] border-0 bg-[#ee3224] cursor-pointer transition-colors hover:bg-[#d42b1e]"
               >
                 <span className={`${mono} text-[14px] font-[500] text-white`}>
-                  Xác nhận · {formatVND(currentTotal)}
+                  {t(isEnglish, "Xác nhận", "Confirm")} · {formatVND(currentTotal)}
                 </span>
               </button>
             </div>
@@ -625,20 +661,20 @@ export default function PaymentPage() {
               }}
               className={`mb-[16px] inline-flex items-center gap-[4px] border-0 bg-transparent p-0 text-[13px] font-[500] text-[#a4a4a4] cursor-pointer transition-colors hover:text-[#080b0d] ${mono}`}
             >
-              <ChevronLeft size={16} /> Quay lại
+              <ChevronLeft size={16} /> {t(isEnglish, "Quay lại", "Back")}
             </button>
 
             <h2 className={`${mono} mb-[8px] text-[24px] font-[700] text-[#080b0d]`}>
-              Thông tin thẻ
+              {t(isEnglish, "Thông tin thẻ", "Card details")}
             </h2>
             <p className={`${mono} mb-[32px] text-[14px] text-[#a4a4a4]`}>
-              Nhập thông tin thẻ ngân hàng của bạn
+              {t(isEnglish, "Nhập thông tin thẻ ngân hàng của bạn", "Enter your bank card details")}
             </p>
 
             <div className="mb-[32px] space-y-[16px]">
               <div>
                 <label className={`${mono} mb-[6px] block text-[12px] font-[500] uppercase tracking-[0.96px] text-[#a4a4a4]`}>
-                  Số thẻ
+                  {t(isEnglish, "Số thẻ", "Card number")}
                 </label>
                 <input
                   type="text"
@@ -651,7 +687,7 @@ export default function PaymentPage() {
 
               <div>
                 <label className={`${mono} mb-[6px] block text-[12px] font-[500] uppercase tracking-[0.96px] text-[#a4a4a4]`}>
-                  Tên trên thẻ
+                  {t(isEnglish, "Tên trên thẻ", "Name on card")}
                 </label>
                 <input
                   type="text"
@@ -665,7 +701,7 @@ export default function PaymentPage() {
               <div className="grid gap-[16px] sm:grid-cols-[minmax(0,1fr)_120px]">
                 <div>
                   <label className={`${mono} mb-[6px] block text-[12px] font-[500] uppercase tracking-[0.96px] text-[#a4a4a4]`}>
-                    Ngày hết hạn
+                    {t(isEnglish, "Ngày hết hạn", "Expiry date")}
                   </label>
                   <input
                     type="text"
@@ -695,7 +731,11 @@ export default function PaymentPage() {
             <div className="mb-[24px] flex items-center gap-[8px] rounded-[10px] bg-[#f9fafb] p-[12px]">
               <Shield size={16} className="shrink-0 text-[#a4a4a4]" />
               <p className={`${mono} text-[12px] text-[#a4a4a4]`}>
-                Thông tin thẻ được mã hóa và bảo mật. ResQ không lưu trữ số thẻ.
+                {t(
+                  isEnglish,
+                  "Thông tin thẻ được mã hóa và bảo mật. ResQ không lưu trữ số thẻ.",
+                  "Card details are encrypted and secured. ResQ does not store card numbers.",
+                )}
               </p>
             </div>
 
@@ -709,7 +749,7 @@ export default function PaymentPage() {
               }`}
             >
               <span className={`${mono} text-[14px] font-[500] text-white`}>
-                Tiếp tục · {formatVND(currentTotal)}
+                {t(isEnglish, "Tiếp tục", "Continue")} · {formatVND(currentTotal)}
               </span>
             </button>
           </div>
@@ -726,23 +766,26 @@ export default function PaymentPage() {
             to="/dich-vu?panel=tracking"
             className={`mb-[16px] inline-flex items-center gap-[4px] text-[13px] font-[500] text-[#a4a4a4] no-underline transition-colors hover:text-[#080b0d] ${mono}`}
           >
-            <ChevronLeft size={16} /> Quay lại panel theo dõi
+            <ChevronLeft size={16} /> {t(isEnglish, "Quay lại panel theo dõi", "Back to tracking panel")}
           </Link>
 
           <div className="mb-8 max-w-[620px]">
             <h1 className={`${mono} mb-[8px] text-[36px] font-[700] text-[#080b0d] sm:text-[44px] lg:text-[48px]`}>
-              Thanh toán
+              {t(isEnglish, "Thanh toán", "Payment")}
             </h1>
             <p className={`${mono} text-[14px] leading-[24px] text-[#4a5565]`}>
-              Chọn phương thức thanh toán phù hợp với bạn và kiểm tra đầy đủ chi
-              tiết đơn hàng trước khi xác nhận.
+              {t(
+                isEnglish,
+                "Chọn phương thức thanh toán phù hợp với bạn và kiểm tra đầy đủ chi tiết đơn hàng trước khi xác nhận.",
+                "Choose the payment method that fits you and review the full request details before confirming.",
+              )}
             </p>
           </div>
 
           <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
             <div>
               <p className={`${mono} mb-[12px] text-[12px] font-[500] text-[#a4a4a4]`}>
-                Phương thức thanh toán
+                {t(isEnglish, "Phương thức thanh toán", "Payment method")}
               </p>
               <div className="mb-[32px] flex flex-col gap-[8px]">
                 {paymentMethods.map((method) => {
@@ -770,10 +813,10 @@ export default function PaymentPage() {
                       </div>
                       <div className="flex-1 text-left">
                         <p className={`${mono} text-[14px] font-[500] text-[#080b0d]`}>
-                          {method.name}
+                          {t(isEnglish, method.name, method.nameEn)}
                         </p>
                         <p className={`${mono} text-[12px] text-[#a4a4a4]`}>
-                          {method.desc}
+                          {t(isEnglish, method.desc, method.descEn)}
                         </p>
                       </div>
                       {isSelected && (
@@ -787,7 +830,7 @@ export default function PaymentPage() {
               </div>
 
               <p className={`${mono} mb-[8px] text-[12px] font-[500] text-[#a4a4a4]`}>
-                Mã giảm giá
+                {t(isEnglish, "Mã giảm giá", "Promo code")}
               </p>
               <div className="mb-[8px] flex flex-col gap-[8px] sm:flex-row">
                 <input
@@ -808,7 +851,7 @@ export default function PaymentPage() {
                   className="h-[40px] rounded-[10px] border border-black bg-[#e8e8e8] px-[16px] cursor-pointer transition-colors hover:bg-[#d8d8d8]"
                 >
                   <span className={`${mono} text-[12px] font-[500] text-black`}>
-                    Áp dụng
+                    {t(isEnglish, "Áp dụng", "Apply")}
                   </span>
                 </button>
               </div>
@@ -817,7 +860,7 @@ export default function PaymentPage() {
                 <div className="flex items-center gap-[4px]">
                   <CheckCircle2 size={14} className="text-[#ee3224]" />
                   <p className={`${mono} text-[11px] text-[#ee3224]`}>
-                    Đã áp dụng: Giảm {formatVND(DISCOUNT)}
+                    {t(isEnglish, "Đã áp dụng: Giảm", "Applied:")} {formatVND(DISCOUNT)}
                   </p>
                 </div>
               )}
@@ -834,7 +877,7 @@ export default function PaymentPage() {
             <aside className="lg:sticky lg:top-[108px]">
               <div className="rounded-[14px] border border-[rgba(4,38,153,0.08)] p-[24px] shadow-[0_18px_50px_rgba(8,11,13,0.04)]">
                 <p className={`${mono} mb-[16px] text-[12px] font-[500] text-[#a4a4a4]`}>
-                  Chi tiết đơn hàng
+                  {t(isEnglish, "Chi tiết đơn hàng", "Request details")}
                 </p>
 
                 <div className="mb-[16px] flex items-center gap-[12px] border-b border-[rgba(4,38,153,0.08)] pb-[16px]">
@@ -843,7 +886,7 @@ export default function PaymentPage() {
                   </div>
                   <div>
                     <p className={`${mono} text-[14px] font-[500] text-[#080b0d]`}>
-                      {request.serviceTitle}
+                      {serviceTitle}
                     </p>
                     <p className={`${mono} text-[12px] text-[#a4a4a4]`}>
                       {request.vehicleName} · {request.vehiclePlate}
@@ -875,8 +918,8 @@ export default function PaymentPage() {
 
                 <div className="mb-[16px] space-y-[8px]">
                   {[
-                    [request.serviceTitle, formatVND(SERVICE_FEE)],
-                    ["Phí di chuyển (3.2 km)", formatVND(TRAVEL_FEE)],
+                    [serviceTitle, formatVND(SERVICE_FEE)],
+                    [t(isEnglish, "Phí di chuyển (3.2 km)", "Travel fee (3.2 km)"), formatVND(TRAVEL_FEE)],
                   ].map(([key, value]) => (
                     <div key={key} className="flex justify-between gap-3">
                       <span className={`${mono} text-[13px] text-[#080b0d]`}>
@@ -890,7 +933,7 @@ export default function PaymentPage() {
                   {applied && (
                     <div className="flex justify-between gap-3">
                       <span className={`${mono} text-[13px] text-[#ee3224]`}>
-                        Giảm giá (RESQ10K)
+                        {t(isEnglish, "Giảm giá (RESQ10K)", "Discount (RESQ10K)")}
                       </span>
                       <span className={`${mono} text-[13px] font-[500] text-[#ee3224]`}>
                         -{formatVND(DISCOUNT)}
@@ -902,7 +945,7 @@ export default function PaymentPage() {
                 <div className="mb-[16px] border-t border-[rgba(4,38,153,0.08)] pt-[16px]">
                   <div className="flex items-center justify-between gap-3">
                     <span className={`${mono} text-[14px] font-[500] text-[#080b0d]`}>
-                      Tổng cộng
+                      {t(isEnglish, "Tổng cộng", "Total")}
                     </span>
                     <span className={`${mono} text-[24px] font-[700] text-[#ee3224]`}>
                       {formatVND(currentTotal)}
@@ -916,19 +959,19 @@ export default function PaymentPage() {
                 >
                   <span className={`${mono} text-[16px] font-[500] text-white`}>
                     {selected === "card"
-                      ? "Nhập thẻ"
+                      ? t(isEnglish, "Nhập thẻ", "Enter card")
                       : selected === "cash"
-                        ? "Xác nhận"
-                        : "Tiếp tục"}
+                        ? t(isEnglish, "Xác nhận", "Confirm")
+                        : t(isEnglish, "Tiếp tục", "Continue")}
                   </span>
                 </button>
 
                 <p className={`${mono} text-center text-[11px] text-[#a4a4a4]`}>
-                  Bằng việc thanh toán, bạn đồng ý với{" "}
+                  {t(isEnglish, "Bằng việc thanh toán, bạn đồng ý với", "By paying, you agree to")}{" "}
                   <span className="cursor-pointer text-[#ee3224] underline">
-                    Điều khoản dịch vụ
+                    {t(isEnglish, "Điều khoản dịch vụ", "Terms of service")}
                   </span>{" "}
-                  của ResQ
+                  {t(isEnglish, "của ResQ", "of ResQ")}
                 </p>
               </div>
             </aside>

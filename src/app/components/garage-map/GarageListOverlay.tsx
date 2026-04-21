@@ -75,7 +75,7 @@ export function GarageListOverlay({
             <div className="min-w-0">
               <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-[#d5d8df]" />
               <p className="resq-eyebrow text-[#ee3224]">
-                {t(isEnglish, "Danh sach garage", "Garage browser")}
+                {t(isEnglish, "Danh sách garage", "Garage browser")}
               </p>
               <h2 className="resq-display mt-2 text-[24px] leading-none font-[700] text-[#080b0d]">
                 {visibleLabel}
@@ -123,7 +123,7 @@ function DesktopHeader({
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="resq-eyebrow text-[#ee3224]">
-            {isEnglish ? "Garage browser" : "Danh sach garage"}
+            {isEnglish ? "Garage browser" : "Danh sách garage"}
           </p>
           <h2 className="resq-display mt-3 text-[28px] leading-[0.95] font-[700] text-[#080b0d]">
             {visibleLabel}
@@ -137,7 +137,7 @@ function DesktopHeader({
       <p className={`${mono} mt-3 text-[11px] leading-[18px] text-[#667085]`}>
         {isEnglish
           ? "Cards stay interactive while the map remains visible underneath."
-          : "Ban do van hien ben duoi trong khi ban duyet garage o day."}
+          : "Bản đồ vẫn hiện bên dưới trong khi bạn duyệt garage ở đây."}
       </p>
     </div>
   );

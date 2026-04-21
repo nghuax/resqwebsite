@@ -36,7 +36,6 @@ function LogoIcon() {
 }
 
 const navItems = [
-  { label: "Trang chủ", labelEn: "Home", path: "/" },
   { label: "Dịch vụ", labelEn: "Services", fixerLabel: "Đơn hàng", fixerLabelEn: "Orders", path: "/dich-vu" },
   { label: "Bản đồ garage", labelEn: "Garage Map", path: "/ban-do-garage" },
   { label: "Trợ giúp", labelEn: "Help", path: "/tro-giup" },

@@ -57,10 +57,10 @@ export function GarageList({
     return (
       <div className="rounded-[24px] border border-[#f5c1bc] bg-[linear-gradient(180deg,#fff4f2_0%,#ffffff_100%)] px-5 py-5 shadow-[0_18px_42px_rgba(8,11,13,0.06)]">
         <p className="resq-eyebrow text-[#ee3224]">
-          {isEnglish ? "Garage data unavailable" : "Khong tai duoc du lieu garage"}
+          {isEnglish ? "Garage data unavailable" : "Không tải được dữ liệu garage"}
         </p>
         <h3 className="resq-display mt-4 text-[28px] leading-[0.95] font-[700] text-[#080b0d]">
-          {isEnglish ? "The live list could not load." : "Danh sach garage song chua tai duoc."}
+          {isEnglish ? "The live list could not load." : "Danh sách garage sống chưa tải được."}
         </h3>
         <p className={`${mono} mt-3 text-[12px] leading-[20px] text-[#667085]`}>
           {errorMessage}
@@ -84,7 +84,7 @@ export function GarageList({
               className="resq-button-pill resq-button-pill--secondary px-5 py-3 no-underline"
             >
               <span className={`${mono} text-[11px] font-[500] uppercase tracking-[0.16em] text-[#080b0d]`}>
-                {isEnglish ? "Open source list" : "Mo danh sach goc"}
+                {isEnglish ? "Open source list" : "Mở danh sách gốc"}
               </span>
               <ExternalLink size={14} className="text-[#ee3224]" />
             </a>
@@ -106,19 +106,19 @@ export function GarageList({
           {noSearchResults
             ? isEnglish
               ? "No garages match this search."
-              : "Khong co garage phu hop voi tim kiem."
+              : "Không có garage phù hợp với tìm kiếm."
             : isEnglish
               ? "No garages found in this category."
-              : "Chua tim thay garage nao trong danh muc nay."}
+              : "Chưa tìm thấy garage nào trong danh mục này."}
         </h3>
         <p className={`${mono} mt-3 text-[12px] leading-[20px] text-[#667085]`}>
           {noSearchResults
             ? isEnglish
               ? "Try a different name or address, or clear the search to see everything in this category."
-              : "Hay thu ten hoac dia chi khac, hoac xoa tim kiem de xem toan bo danh muc nay."
+              : "Hãy thử tên hoặc địa chỉ khác, hoặc xóa tìm kiếm để xem toàn bộ danh mục này."
             : isEnglish
               ? "Switch category, try another search, or retry later if the live provider is still updating."
-              : "Hay doi danh muc, thu tu khoa khac, hoac tai lai neu du lieu song dang cap nhat."}
+              : "Hãy đổi danh mục, thử từ khóa khác, hoặc tải lại nếu dữ liệu sống đang cập nhật."}
         </p>
         <div className="mt-5 flex flex-col gap-3 sm:flex-row">
           {noSearchResults && (

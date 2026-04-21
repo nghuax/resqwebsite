@@ -1,6 +1,8 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Car, Bike, Plus, X } from "lucide-react";
 import type { VehicleType } from "../resqStore";
+import { useLanguage } from "../LanguageContext";
+import { localizeVehicleType, t } from "../localization";
 
 const mono = "font-['IBM_Plex_Mono',monospace]";
 
@@ -20,6 +22,8 @@ export function VehicleFormModal({
   onClose,
   onSave,
 }: VehicleFormModalProps) {
+  const { language } = useLanguage();
+  const isEnglish = language === "en";
   const [name, setName] = useState("");
   const [plate, setPlate] = useState("");
   const [year, setYear] = useState("");
@@ -48,26 +52,30 @@ export function VehicleFormModal({
             type="button"
             onClick={onClose}
             className="absolute right-[16px] top-[16px] flex size-[32px] items-center justify-center rounded-full border-0 bg-transparent cursor-pointer transition-colors hover:bg-[#f5f5f5]"
-            aria-label="Đóng thêm xe"
+            aria-label={t(isEnglish, "Đóng thêm xe", "Close add vehicle")}
           >
             <X size={18} className="text-[#a4a4a4]" />
           </button>
 
           <div className="mb-6 pr-8">
             <p className={`${mono} mb-2 text-[11px] uppercase tracking-[0.18em] text-[#99a1af]`}>
-              Thêm xe nhanh
+              {t(isEnglish, "Thêm xe nhanh", "Quick add vehicle")}
             </p>
             <h3 className={`${mono} text-[22px] font-[700] text-[#080b0d]`}>
-              Thêm phương tiện để đặt dịch vụ
+              {t(isEnglish, "Thêm phương tiện để đặt dịch vụ", "Add a vehicle for service requests")}
             </h3>
             <p className={`${mono} mt-2 text-[13px] leading-[22px] text-[#4a5565]`}>
-              Xe mới sẽ được lưu ngay để bạn có thể dùng lại ở các lần hỗ trợ sau.
+              {t(
+                isEnglish,
+                "Xe mới sẽ được lưu ngay để bạn có thể dùng lại ở các lần hỗ trợ sau.",
+                "The new vehicle will be saved so you can reuse it for future support.",
+              )}
             </p>
           </div>
 
           <div className="mb-5">
             <p className={`${mono} mb-[10px] text-[11px] uppercase tracking-[0.16em] text-[#99a1af]`}>
-              Loại xe
+              {t(isEnglish, "Loại xe", "Vehicle type")}
             </p>
             <div className="grid gap-2 sm:grid-cols-2">
               {allowedTypes.map((option) => {
@@ -96,7 +104,7 @@ export function VehicleFormModal({
                       )}
                     </div>
                     <span className={`${mono} text-[13px] font-[500] text-[#080b0d]`}>
-                      {option}
+                      {localizeVehicleType(option, isEnglish)}
                     </span>
                   </button>
                 );
@@ -105,17 +113,17 @@ export function VehicleFormModal({
           </div>
 
           <div className="grid gap-4">
-            <Field label="Tên xe">
+            <Field label={t(isEnglish, "Tên xe", "Vehicle name")}>
               <input
                 value={name}
                 onChange={(event) => setName(event.target.value)}
-                placeholder={type === "Xe máy" ? "VD: Honda Vision 2023" : "VD: Toyota Vios G"}
+                placeholder={type === "Xe máy" ? t(isEnglish, "VD: Honda Vision 2023", "E.g. Honda Vision 2023") : t(isEnglish, "VD: Toyota Vios G", "E.g. Toyota Vios G")}
                 className={`h-[46px] w-full rounded-[10px] border border-[rgba(4,38,153,0.08)] bg-white px-[14px] text-[13px] text-[#080b0d] outline-none transition-colors placeholder:text-[#a4a4a4] focus:border-[#ee3224] ${mono}`}
               />
             </Field>
 
             <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_120px]">
-              <Field label="Biển số">
+              <Field label={t(isEnglish, "Biển số", "Plate number")}>
                 <input
                   value={plate}
                   onChange={(event) => setPlate(event.target.value.toUpperCase())}
@@ -124,7 +132,7 @@ export function VehicleFormModal({
                 />
               </Field>
 
-              <Field label="Năm">
+              <Field label={t(isEnglish, "Năm", "Year")}>
                 <input
                   value={year}
                   onChange={(event) => setYear(event.target.value.replace(/\D/g, "").slice(0, 4))}
@@ -143,7 +151,7 @@ export function VehicleFormModal({
               className="h-[46px] flex-1 rounded-[10px] border border-black bg-white transition-colors hover:bg-[#f5f5f5]"
             >
               <span className={`${mono} text-[14px] font-[500] text-[#080b0d]`}>
-                Hủy
+                {t(isEnglish, "Hủy", "Cancel")}
               </span>
             </button>
             <button
@@ -154,7 +162,7 @@ export function VehicleFormModal({
             >
               <Plus size={16} className="text-white" />
               <span className={`${mono} text-[14px] font-[500] text-white`}>
-                Lưu xe
+                {t(isEnglish, "Lưu xe", "Save vehicle")}
               </span>
             </button>
           </div>

@@ -19,6 +19,13 @@ type ResQProfileRecord = {
   role: string | null;
 };
 
+type SyncProfileInput = {
+  name: string;
+  phone: string;
+  email: string;
+  role: ResQAuthRole;
+};
+
 const PROFILE_TABLE = "profiles";
 
 export function normalizeRole(value: unknown): ResQAuthRole {
@@ -33,7 +40,10 @@ function safeString(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
 
-async function fetchProfile(userId: string) {
+async function fetchProfileResult(userId: string): Promise<{
+  profile: ResQProfileRecord | null;
+  error: unknown;
+}> {
   try {
     const { data, error } = await createClient()
       .from(PROFILE_TABLE)
@@ -42,13 +52,21 @@ async function fetchProfile(userId: string) {
       .maybeSingle();
 
     if (error) {
-      return null;
+      return { profile: null, error };
     }
 
-    return (data ?? null) as ResQProfileRecord | null;
-  } catch {
-    return null;
+    return {
+      profile: (data ?? null) as ResQProfileRecord | null,
+      error: null,
+    };
+  } catch (error) {
+    return { profile: null, error };
   }
+}
+
+async function fetchProfile(userId: string) {
+  const { profile } = await fetchProfileResult(userId);
+  return profile;
 }
 
 export async function buildAuthUser(user: User): Promise<ResQAuthUser> {
@@ -68,18 +86,13 @@ export async function buildAuthUser(user: User): Promise<ResQAuthUser> {
     name,
     phone,
     email,
-    role: normalizeRole(profile?.role),
+    role: normalizeRole(profile?.role ?? metadata.role),
   };
 }
 
 export async function syncProfile(
   user: User,
-  input: {
-    name: string;
-    phone: string;
-    email: string;
-    role: ResQAuthRole;
-  },
+  input: SyncProfileInput,
 ) {
   try {
     await createClient().from(PROFILE_TABLE).upsert(
@@ -94,6 +107,51 @@ export async function syncProfile(
     );
   } catch {
     // Keep auth working even before the optional profiles table is created.
+  }
+}
+
+export async function ensureProfile(
+  user: User,
+  input: SyncProfileInput,
+) {
+  const existing = await fetchProfileResult(user.id);
+
+  if (existing.profile || existing.error) {
+    return existing.profile;
+  }
+
+  const metadata = user.user_metadata ?? {};
+  const email =
+    input.email.trim().toLowerCase() ||
+    safeString(user.email).toLowerCase();
+  const name =
+    input.name.trim() ||
+    safeString(metadata.full_name) ||
+    safeString(metadata.name) ||
+    (email ? email.split("@")[0] : "") ||
+    "Người dùng ResQ";
+  const phone = input.phone.trim() || safeString(metadata.phone);
+
+  try {
+    const { data, error } = await createClient()
+      .from(PROFILE_TABLE)
+      .insert({
+        id: user.id,
+        full_name: name,
+        phone,
+        email,
+        role: input.role,
+      })
+      .select("id, full_name, phone, email, role")
+      .maybeSingle();
+
+    if (!error) {
+      return (data ?? null) as ResQProfileRecord | null;
+    }
+
+    return fetchProfile(user.id);
+  } catch {
+    return null;
   }
 }
 

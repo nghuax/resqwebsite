@@ -4,13 +4,13 @@ export const garageMapSourceLinks: GarageSourceLink[] = [
   {
     type: "car",
     url: "https://maps.app.goo.gl/CDC9TLkuoXNfPse68",
-    label: "Nguon tham chieu o to",
+    label: "Nguồn tham chiếu ô tô",
     labelEn: "Car source reference",
   },
   {
     type: "motorcycle",
     url: "https://maps.app.goo.gl/J9RtpC4BUJzrNh2E8",
-    label: "Nguon tham chieu xe may",
+    label: "Nguồn tham chiếu xe máy",
     labelEn: "Motorcycle source reference",
   },
 ];

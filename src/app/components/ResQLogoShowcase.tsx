@@ -1,14 +1,18 @@
 import svgPaths from "../../imports/TrangChủ/svg-t7f5kuudxj";
+import { useLanguage } from "./LanguageContext";
+import { t } from "./localization";
 
 const mono = "font-['IBM_Plex_Mono',monospace]";
 
-const brandStats = [
-  { label: "Phản hồi", value: "15-30 phút" },
-  { label: "Hỗ trợ", value: "24/7" },
-  { label: "Phạm vi", value: "Toàn quốc" },
-];
-
 export function ResQLogoShowcase({ className = "" }: { className?: string }) {
+  const { language } = useLanguage();
+  const isEnglish = language === "en";
+  const brandStats = [
+    { label: t(isEnglish, "Phản hồi", "Response"), value: t(isEnglish, "15-30 phút", "15-30 min") },
+    { label: t(isEnglish, "Hỗ trợ", "Support"), value: "24/7" },
+    { label: t(isEnglish, "Phạm vi", "Coverage"), value: t(isEnglish, "Toàn quốc", "Nationwide") },
+  ];
+
   return (
     <div
       className={`relative overflow-hidden rounded-[20px] border border-[rgba(4,38,153,0.08)] bg-[#f7f7f8] shadow-[0_20px_70px_rgba(8,11,13,0.08)] ${className}`}
@@ -18,7 +22,7 @@ export function ResQLogoShowcase({ className = "" }: { className?: string }) {
       <div className="relative flex h-full flex-col justify-between gap-6 p-6 sm:p-8 lg:p-10">
         <div className="inline-flex w-fit items-center rounded-full border border-[rgba(238,50,36,0.12)] bg-white/80 px-3 py-1.5 shadow-[0_10px_20px_rgba(8,11,13,0.04)] backdrop-blur-[12px]">
           <span className={`${mono} text-[11px] uppercase tracking-[0.18em] text-[#ee3224]`}>
-            Nhận diện ResQ
+            {t(isEnglish, "Nhận diện ResQ", "ResQ identity")}
           </span>
         </div>
 
@@ -45,8 +49,11 @@ export function ResQLogoShowcase({ className = "" }: { className?: string }) {
               ResQ
             </p>
             <p className={`${mono} mt-3 max-w-[360px] text-[13px] leading-[22px] text-[#4a5565] sm:text-[14px] sm:leading-[24px]`}>
-              Xe của bạn, việc của chúng tôi. Hệ thống cứu hộ được thiết kế để
-              phản hồi nhanh, rõ ràng và đáng tin cậy trên mọi hành trình.
+              {t(
+                isEnglish,
+                "Xe của bạn, việc của chúng tôi. Hệ thống cứu hộ được thiết kế để phản hồi nhanh, rõ ràng và đáng tin cậy trên mọi hành trình.",
+                "Your vehicle, our job. The rescue system is designed to respond quickly, clearly, and reliably on every trip.",
+              )}
             </p>
           </div>
         </div>

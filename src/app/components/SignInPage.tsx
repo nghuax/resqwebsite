@@ -24,6 +24,11 @@ export default function SignInPage() {
   const [searchParams] = useSearchParams();
   const initialTab = searchParams.get("tab") === "register" ? "register" : "login";
   const initialRole = searchParams.get("role") === "fixer" ? "fixer" : "user";
+  const redirectParam = searchParams.get("redirect");
+  const redirectTarget =
+    redirectParam?.startsWith("/") && !redirectParam.startsWith("//")
+      ? redirectParam
+      : "/tai-khoan";
   const [tab, setTab] = useState<"login" | "register">(initialTab);
   const [authRole, setAuthRole] = useState<"user" | "fixer">(initialRole);
   const [showPassword, setShowPassword] = useState(false);
@@ -47,8 +52,8 @@ export default function SignInPage() {
       return;
     }
 
-    navigate("/tai-khoan", { replace: true });
-  }, [isLoggedIn, navigate]);
+    navigate(redirectTarget, { replace: true });
+  }, [isLoggedIn, navigate, redirectTarget]);
 
   const clearMessages = () => {
     setLoginError("");
@@ -81,7 +86,7 @@ export default function SignInPage() {
       return;
     }
 
-    navigate("/tai-khoan");
+    navigate(redirectTarget);
   };
 
   const handleRegister = async () => {
@@ -148,7 +153,7 @@ export default function SignInPage() {
       return;
     }
 
-    navigate("/tai-khoan");
+    navigate(redirectTarget);
   };
 
   return (

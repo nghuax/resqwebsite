@@ -204,6 +204,78 @@ on public.profiles
 for each row
 execute function app_private.sync_role_profile_tree_trigger();
 
+create or replace function app_private.create_profile_for_new_auth_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  _role text := case
+    when new.raw_user_meta_data ->> 'role' = 'fixer' then 'fixer'
+    else 'user'
+  end;
+  _full_name text := coalesce(
+    nullif(btrim(new.raw_user_meta_data ->> 'full_name'), ''),
+    nullif(btrim(new.raw_user_meta_data ->> 'name'), ''),
+    nullif(split_part(coalesce(new.email, ''), '@', 1), '')
+  );
+  _phone text := nullif(btrim(new.raw_user_meta_data ->> 'phone'), '');
+begin
+  insert into public.profiles (
+    id,
+    full_name,
+    phone,
+    email,
+    role
+  )
+  values (
+    new.id,
+    _full_name,
+    _phone,
+    new.email,
+    _role
+  )
+  on conflict (id) do nothing;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists create_profile_for_new_auth_user on auth.users;
+create trigger create_profile_for_new_auth_user
+after insert on auth.users
+for each row
+execute function app_private.create_profile_for_new_auth_user();
+
+insert into public.profiles (
+  id,
+  full_name,
+  phone,
+  email,
+  role
+)
+select
+  users.id,
+  coalesce(
+    nullif(btrim(users.raw_user_meta_data ->> 'full_name'), ''),
+    nullif(btrim(users.raw_user_meta_data ->> 'name'), ''),
+    nullif(split_part(coalesce(users.email, ''), '@', 1), '')
+  ),
+  nullif(btrim(users.raw_user_meta_data ->> 'phone'), ''),
+  users.email,
+  case
+    when users.raw_user_meta_data ->> 'role' = 'fixer' then 'fixer'
+    else 'user'
+  end
+from auth.users
+where not exists (
+  select 1
+  from public.profiles
+  where profiles.id = users.id
+)
+on conflict (id) do nothing;
+
 create table if not exists public.vehicles (
   id text primary key,
   owner_id uuid not null references auth.users (id) on delete cascade,
@@ -737,6 +809,10 @@ declare
   _vehicle public.vehicles%rowtype;
   _existing_request_id text;
   _created_request public.service_requests%rowtype;
+  _vehicle_name text := coalesce(nullif(btrim(p_vehicle_name), ''), 'Phương tiện ResQ');
+  _vehicle_plate text := upper(nullif(btrim(p_vehicle_plate), ''));
+  _vehicle_year text := '2026';
+  _vehicle_type text;
 begin
   if _actor_id is null then
     raise exception 'Bạn cần đăng nhập để tạo yêu cầu.';
@@ -747,8 +823,50 @@ begin
   from public.profiles
   where profiles.id = _actor_id;
 
+  if not found then
+    insert into public.profiles (
+      id,
+      full_name,
+      phone,
+      email,
+      role
+    )
+    select
+      users.id,
+      coalesce(
+        nullif(btrim(users.raw_user_meta_data ->> 'full_name'), ''),
+        nullif(btrim(users.raw_user_meta_data ->> 'name'), ''),
+        nullif(split_part(coalesce(users.email, ''), '@', 1), ''),
+        'Khách ResQ'
+      ),
+      nullif(btrim(users.raw_user_meta_data ->> 'phone'), ''),
+      users.email,
+      'user'
+    from auth.users
+    where users.id = _actor_id
+    on conflict (id) do nothing;
+
+    select *
+    into _profile
+    from public.profiles
+    where profiles.id = _actor_id;
+  end if;
+
   if not found or _profile.role <> 'user' then
     raise exception 'Chỉ tài khoản khách hàng mới có thể tạo yêu cầu.';
+  end if;
+
+  if _vehicle_plate is null then
+    raise exception 'Biển số xe không hợp lệ.';
+  end if;
+
+  _vehicle_type := case
+    when p_vehicle_type in ('Xe máy', 'Ô tô') then p_vehicle_type
+    else null
+  end;
+
+  if _vehicle_type is null then
+    raise exception 'Loại xe không hợp lệ.';
   end if;
 
   select *
@@ -758,7 +876,53 @@ begin
     and vehicles.owner_id = _actor_id;
 
   if not found then
-    raise exception 'Không tìm thấy phương tiện hợp lệ cho yêu cầu này.';
+    select *
+    into _vehicle
+    from public.vehicles
+    where vehicles.owner_id = _actor_id
+      and vehicles.plate = _vehicle_plate
+    order by vehicles.created_at desc
+    limit 1;
+  end if;
+
+  if found then
+    update public.vehicles
+    set
+      name = _vehicle_name,
+      plate = _vehicle_plate,
+      type = _vehicle_type,
+      updated_at = timezone('utc', now())
+    where vehicles.id = _vehicle.id
+      and vehicles.owner_id = _actor_id
+    returning *
+    into _vehicle;
+  else
+    insert into public.vehicles (
+      id,
+      owner_id,
+      name,
+      plate,
+      year,
+      type,
+      is_default,
+      updated_at
+    )
+    values (
+      p_vehicle_id,
+      _actor_id,
+      _vehicle_name,
+      _vehicle_plate,
+      _vehicle_year,
+      _vehicle_type,
+      not exists (
+        select 1
+        from public.vehicles
+        where vehicles.owner_id = _actor_id
+      ),
+      timezone('utc', now())
+    )
+    returning *
+    into _vehicle;
   end if;
 
   select service_requests.id
@@ -775,7 +939,12 @@ begin
   limit 1;
 
   if _existing_request_id is not null then
-    raise exception 'Bạn đang có một yêu cầu đang hoạt động.';
+    select *
+    into _created_request
+    from public.service_requests
+    where service_requests.id = _existing_request_id;
+
+    return _created_request;
   end if;
 
   insert into public.service_requests (
@@ -937,8 +1106,11 @@ begin
   from public.fixer_profiles
   where fixer_profiles.profile_id = _actor_id;
 
-  if not found or _profile.role <> 'fixer' or _fixer_profile.approval_status <> 'approved' then
-    raise exception 'Chỉ fixer đã được duyệt mới có thể nhận đơn.';
+  if not found
+    or _profile.role <> 'fixer'
+    or _fixer_profile.approval_status <> 'approved'
+    or not coalesce(_fixer_profile.is_available, false) then
+    raise exception 'Chỉ fixer đang hoạt động và đã được duyệt mới có thể nhận đơn.';
   end if;
 
   update public.service_requests
