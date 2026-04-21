@@ -17,8 +17,9 @@ const OVERPASS_ENDPOINTS = [
   "https://overpass.kumi.systems/api/interpreter",
   "https://overpass-api.de/api/interpreter",
 ].filter(Boolean) as string[];
-const LIVE_RADIUS_METERS = 25_000;
+const LIVE_RADIUS_METERS = 15_000;
 const MAX_GARAGES_PER_CATEGORY = 14;
+const OVERPASS_REQUEST_TIMEOUT_MS = 9000;
 
 type GooglePlace = {
   id?: string;
@@ -287,6 +288,9 @@ async function fetchOverpassResponse(query: string): Promise<OverpassResponse> {
   let lastError: unknown = null;
 
   for (const endpoint of OVERPASS_ENDPOINTS) {
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), OVERPASS_REQUEST_TIMEOUT_MS);
+
     try {
       const url = `${endpoint}?data=${encodeURIComponent(query)}`;
       const response = await fetch(url, {
@@ -294,6 +298,7 @@ async function fetchOverpassResponse(query: string): Promise<OverpassResponse> {
         headers: {
           Accept: "application/json",
         },
+        signal: controller.signal,
       });
 
       if (!response.ok) {
@@ -303,6 +308,8 @@ async function fetchOverpassResponse(query: string): Promise<OverpassResponse> {
       return (await response.json()) as OverpassResponse;
     } catch (error) {
       lastError = error;
+    } finally {
+      window.clearTimeout(timer);
     }
   }
 

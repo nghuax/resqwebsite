@@ -25,22 +25,83 @@ const initialState: GarageMapDataState = {
   error: null,
 };
 
+const CACHE_STORAGE_KEY = "resq.garageMapData.v1";
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+
+type CachedPayload = {
+  cachedAt: number;
+  data: GarageMapDataResponse;
+};
+
+function readCachedData(): GarageMapDataResponse | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    const raw = window.localStorage.getItem(CACHE_STORAGE_KEY);
+
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw) as CachedPayload;
+
+    if (
+      !parsed ||
+      typeof parsed.cachedAt !== "number" ||
+      !parsed.data ||
+      !Array.isArray(parsed.data.garages) ||
+      parsed.data.garages.length === 0
+    ) {
+      return null;
+    }
+
+    if (Date.now() - parsed.cachedAt > CACHE_TTL_MS) {
+      return null;
+    }
+
+    return parsed.data;
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedData(data: GarageMapDataResponse) {
+  if (typeof window === "undefined" || data.garages.length === 0) {
+    return;
+  }
+
+  try {
+    const payload: CachedPayload = { cachedAt: Date.now(), data };
+    window.localStorage.setItem(CACHE_STORAGE_KEY, JSON.stringify(payload));
+  } catch {
+    // Storage can be unavailable (private mode, quota). Ignore silently.
+  }
+}
+
 export function useGarageMapData() {
-  const [state, setState] = useState<GarageMapDataState>(initialState);
+  const [state, setState] = useState<GarageMapDataState>(() => {
+    const cached = readCachedData();
+
+    if (cached) {
+      return { status: "success", data: cached, error: null };
+    }
+
+    return initialState;
+  });
   const [reloadToken, setReloadToken] = useState(0);
 
   useEffect(() => {
     let isCancelled = false;
-
-    startTransition(() => {
-      setState(initialState);
-    });
 
     void loadGarageMapData()
       .then((data) => {
         if (isCancelled) {
           return;
         }
+
+        writeCachedData(data);
 
         startTransition(() => {
           setState({
@@ -56,13 +117,19 @@ export function useGarageMapData() {
         }
 
         startTransition(() => {
-          setState({
-            status: "error",
-            data: null,
-            error:
-              error instanceof Error
-                ? error.message
-                : "Garage data could not be loaded.",
+          setState((previous) => {
+            if (previous.status === "success") {
+              return previous;
+            }
+
+            return {
+              status: "error",
+              data: null,
+              error:
+                error instanceof Error
+                  ? error.message
+                  : "Garage data could not be loaded.",
+            };
           });
         });
       });
